@@ -1,78 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BacktestLab — Backtester</title>
-<link rel="stylesheet" href="dashboard.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BacktestLab Pro</title>
+  <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
+
 <header>
-  <a class="logo" href="index.html">Backtest<span>Lab</span></a>
-  <div class="header-right"><span class="live-dot">●</span> Demo Mode</div>
+  <div class="logo">Backtest<span>Lab</span></div>
+  <div class="live"><i></i> DEMO MARKET</div>
 </header>
 
 <main>
-  <div class="toolbar">
-    <div class="selectors">
-      <label>MARKET
-        <select id="market">
-          <option value="crypto">Crypto</option>
-          <option value="forex">Forex</option>
-        </select>
-      </label>
-      <label>PAIR
-        <select id="pair"></select>
-      </label>
-      <label>TIMEFRAME
-        <select id="timeframe">
-          <option>5m</option><option>15m</option><option selected>1H</option><option>4H</option><option>1D</option>
-        </select>
-      </label>
+
+  <section class="controls">
+    <div>
+      <label>Market</label>
+      <select id="market">
+        <option>Forex</option>
+        <option>Crypto</option>
+      </select>
     </div>
-    <button class="reset" id="reset">Reset</button>
+
+    <div>
+      <label>Pair</label>
+      <select id="pair"></select>
+    </div>
+
+    <div>
+      <label>Timeframe</label>
+      <select id="timeframe">
+        <option>5m</option>
+        <option>15m</option>
+        <option>1H</option>
+        <option>4H</option>
+        <option>1D</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Balance</label>
+      <input id="balance" type="number" value="1000">
+    </div>
+
+    <div>
+      <label>Risk %</label>
+      <input id="risk" type="number" value="1" step="0.1">
+    </div>
+
+    <button id="reset">RESET</button>
+  </section>
+
+  <div class="grid">
+
+    <section>
+
+      <div class="card chart-box">
+
+        <div class="chart-header">
+          <div>
+            <strong id="chartPair">EUR/USD</strong>
+            <small id="chartInfo">5m • Demo Historical Data</small>
+          </div>
+
+          <strong id="price">1.10000</strong>
+        </div>
+
+        <canvas id="chart"></canvas>
+
+        <div class="replay">
+          <button id="prev">← Previous</button>
+          <button id="next" class="primary">Next Candle →</button>
+          <button id="play">▶ Play</button>
+
+          <label class="speed">
+            Speed
+            <input id="speed" type="range" min="100" max="1000" value="400">
+          </label>
+        </div>
+
+      </div>
+
+      <div class="card trade-panel">
+
+        <div>
+          <label>Position</label>
+          <div class="side-buttons">
+            <button id="buy" class="buy">BUY</button>
+            <button id="sell" class="sell">SELL</button>
+          </div>
+        </div>
+
+        <div>
+          <label>Entry</label>
+          <input id="entry">
+        </div>
+
+        <div>
+          <label>Stop Loss</label>
+          <input id="sl">
+        </div>
+
+        <div>
+          <label>Take Profit</label>
+          <input id="tp">
+        </div>
+
+        <div>
+          <label>Position Size</label>
+          <input id="size" type="number" value="0.10" step="0.01">
+        </div>
+
+      </div>
+
+      <div class="card history">
+
+        <div class="history-title">
+          <strong>Trade History</strong>
+          <button id="clear">Clear</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Side</th>
+              <th>Entry</th>
+              <th>Exit</th>
+              <th>P/L</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+
+          <tbody id="history"></tbody>
+        </table>
+
+      </div>
+
+    </section>
+
+    <aside>
+
+      <div class="stat">
+        <span>Balance</span>
+        <b id="statBalance">$1,000.00</b>
+      </div>
+
+      <div class="stat">
+        <span>Net P/L</span>
+        <b id="statPL">$0.00</b>
+      </div>
+
+      <div class="stat">
+        <span>Win Rate</span>
+        <b id="statWin">0%</b>
+      </div>
+
+      <div class="stat">
+        <span>Drawdown</span>
+        <b id="statDD">0%</b>
+      </div>
+
+      <div class="stat">
+        <span>Open Trade</span>
+        <b id="statOpen">None</b>
+      </div>
+
+      <div class="help">
+        <strong>Replay Guide</strong>
+        <p>1. Move candle by candle.</p>
+        <p>2. Set SL and TP.</p>
+        <p>3. Click BUY or SELL.</p>
+        <p>4. Continue replay.</p>
+        <p>5. SL/TP closes automatically.</p>
+      </div>
+
+    </aside>
+
   </div>
 
-  <section class="workspace">
-    <div class="chart-card">
-      <div class="chart-head">
-        <div><strong id="symbol">BTC/USDT</strong><span id="price">$100,000.00</span></div>
-        <button id="nextCandle">Next Candle ▶</button>
-      </div>
-      <div class="chart-wrap">
-        <canvas id="chart"></canvas>
-        <div class="chart-note">Demo candles for UI testing — historical market data will be connected in the next phase.</div>
-      </div>
-    </div>
-
-    <aside class="trade-card">
-      <div class="tabs"><button class="active" id="buyTab">BUY</button><button id="sellTab">SELL</button></div>
-      <label>ENTRY PRICE<input id="entry" type="number" value="100000"></label>
-      <label>STOP LOSS<input id="sl" type="number" value="99000"></label>
-      <label>TAKE PROFIT<input id="tp" type="number" value="102000"></label>
-      <label>POSITION SIZE<input id="size" type="number" value="0.01" step="0.01"></label>
-      <button class="place" id="placeTrade">Place Trade</button>
-      <div id="tradeMessage" class="message"></div>
-    </aside>
-  </section>
-
-  <section class="stats">
-    <div><span>Total Trades</span><strong id="trades">0</strong></div>
-    <div><span>Wins</span><strong id="wins">0</strong></div>
-    <div><span>Losses</span><strong id="losses">0</strong></div>
-    <div><span>Win Rate</span><strong id="winrate">0%</strong></div>
-    <div><span>Net P/L</span><strong id="pnl">$0.00</strong></div>
-    <div><span>Drawdown</span><strong id="drawdown">$0.00</strong></div>
-  </section>
-
-  <section class="history">
-    <div class="history-head"><h2>Trade History</h2><span>Local demo</span></div>
-    <div class="table-wrap">
-      <table><thead><tr><th>#</th><th>Side</th><th>Entry</th><th>SL</th><th>TP</th><th>Size</th><th>Status</th></tr></thead>
-      <tbody id="historyBody"><tr><td colspan="7" class="empty">No trades yet. Place a demo trade to see it here.</td></tr></tbody></table>
-    </div>
-  </section>
 </main>
+
 <script src="dashboard.js"></script>
 </body>
 </html>

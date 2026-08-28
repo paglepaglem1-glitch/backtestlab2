@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BacktestLab — Test Your Strategy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="logo">Backtest<span>Lab</span></div>
+    <div class="nav-links">
+      <a href="dashboard.html">Markets</a>
+      <a href="#features">Features</a>
+      <a class="nav-btn" href="#start">Start Backtesting</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero" id="start">
+      <div class="badge">● FOREX + CRYPTO BACKTESTING</div>
+      <h1>Backtest your strategy.<br><span>Trade with confidence.</span></h1>
+      <p>Replay historical market data, test your entries and exits, and see exactly how your strategy performs.</p>
+      <div class="hero-buttons">
+        <a class="primary-btn" href="dashboard.html">Start Backtesting <b>→</b></a>
+        <a class="secondary-btn" href="#features">Explore Features</a>
+      </div>
+      <div class="stats">
+        <div><strong>2</strong><small>Markets</small></div>
+        <div><strong>24/7</strong><small>Practice</small></div>
+        <div><strong>Free</strong><small>To Start</small></div>
+      </div>
+    </section>
+
+    <section class="markets" id="markets">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">CHOOSE YOUR MARKET</p>
+          <h2>Practice where you trade.</h2>
+        </div>
+        <p>Start with the market you want to test.</p>
+      </div>
+      <div class="market-grid">
+        <article class="market-card">
+          <div class="icon">₿</div>
+          <h3>Crypto</h3>
+          <p>Test BTC, ETH and other crypto pairs on historical price action.</p>
+          <button onclick="window.location.href='dashboard.html?market=crypto'">Backtest Crypto →</button>
+        </article>
+        <article class="market-card">
+          <div class="icon">FX</div>
+          <h3>Forex</h3>
+          <p>Practice major forex pairs and test your trading rules candle by candle.</p>
+          <button onclick="window.location.href='dashboard.html?market=forex'">Backtest Forex →</button>
+        </article>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <p class="eyebrow">WHY BACKTESTLAB</p>
+      <h2>Everything you need to test a strategy.</h2>
+      <div class="feature-grid">
+        <div class="feature"><div>⚡</div><h3>Fast Replay</h3><p>Move through historical candles and make decisions without seeing future price action.</p></div>
+        <div class="feature"><div>📊</div><h3>Clear Statistics</h3><p>Track wins, losses, win rate, profit/loss and drawdown.</p></div>
+        <div class="feature"><div>🎯</div><h3>Risk Testing</h3><p>Experiment with entries, stop loss and take profit to understand your strategy.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="logo">Backtest<span>Lab</span></div>
+    <p>Practice. Measure. Improve.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

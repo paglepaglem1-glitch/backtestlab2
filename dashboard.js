@@ -1,10 +1,11 @@
+```javascript
 const canvas = document.getElementById("chart");
-const ctx = canvas.getContext("2d");
+const ctx = canvas ? canvas.getContext("2d") : null;
 
 const $ = id => document.getElementById(id);
 
 const pairs = {
-  Forex: ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD"],
+  Forex: ["XAU/USD", "EUR/USD", "GBP/USD", "USD/JPY"],
   Crypto: ["BTC/USD", "ETH/USD", "SOL/USD"]
 };
 
@@ -21,75 +22,81 @@ let timer = null;
 
 
 /* =========================
-   CANDLE DATA
+   SAFE ELEMENT HELPER
+========================= */
+
+function setText(id, value) {
+  const el = $(id);
+  if (el) el.textContent = value;
+}
+
+function setValue(id, value) {
+  const el = $(id);
+  if (el) el.value = value;
+}
+
+
+/* =========================
+   LOAD XAUUSD CSV
 ========================= */
 
 async function generateCandles() {
 
-  const pair = $("pair").value;
+  const pair = $("pair") ? $("pair").value : "XAU/USD";
 
-  const symbolMap = {
-    "EUR/USD": "EURUSD",
-    "GBP/USD": "GBPUSD",
-    "USD/JPY": "USDJPY",
-    "XAU/USD": "XAUUSD",
-    "BTC/USD": "BTCUSD",
-    "ETH/USD": "ETHUSD",
-    "SOL/USD": "SOLUSD"
-  };
+  if (pair !== "XAU/USD") {
+    setText(
+      "chartInfo",
+      "Currently available: XAU/USD 5m historical data"
+    );
 
-  const symbol = symbolMap[pair];
+    candles = [];
+    candleIndex = 0;
+    drawChart();
+    return;
+  }
 
-  const timeframeMap = {
-    "5m": "5m",
-    "15m": "15m",
-    "1H": "1h",
-    "4H": "4h",
-    "1D": "1d"
-  };
-
-  const interval =
-    timeframeMap[$("timeframe").value] || "5m";
+  setText(
+    "chartInfo",
+    "Loading XAU/USD historical data..."
+  );
 
   try {
 
-    $("chartInfo").textContent =
-      "Loading real market data...";
-
-    const url =
-      `https://biquote.io/api/${symbol}/ohlc?interval=${interval}&limit=1000`;
-
-    const response = await fetch(url);
+    const response =
+      await fetch("data/XAUUSD_5m.csv");
 
     if (!response.ok) {
-      throw new Error("Data request failed");
+      throw new Error(
+        "XAUUSD_5m.csv not found"
+      );
     }
 
-    const data = await response.json();
+    const text =
+      await response.text();
 
-    if (!data.bars || !data.bars.length) {
-      throw new Error("No candles received");
+    candles =
+      parseCSV(text);
+
+    if (!candles.length) {
+      throw new Error(
+        "No valid candles found"
+      );
     }
-
-    candles = data.bars
-      .filter(candle => !candle.isOpen)
-      .reverse()
-      .map(candle => ({
-        open: Number(candle.open),
-        high: Number(candle.high),
-        low: Number(candle.low),
-        close: Number(candle.close),
-        time: candle.openTime
-      }));
 
     candleIndex =
-      Math.min(50, candles.length - 1);
+      Math.min(
+        50,
+        candles.length - 1
+      );
 
     openTrade = null;
     pendingOrder = null;
 
-    $("chartInfo").textContent =
-      `${$("timeframe").value} • Real Historical Data`;
+    setText(
+      "chartInfo",
+      `5m • ${candles.length} real historical XAU/USD candles`
+    );
 
     render();
 
@@ -97,68 +104,172 @@ async function generateCandles() {
 
     console.error(error);
 
-    $("chartInfo").textContent =
-      "Unable to load market data";
+    candles = [];
+    candleIndex = 0;
+
+    setText(
+      "chartInfo",
+      "XAU/USD CSV could not be loaded"
+    );
 
     alert(
-      "Historical data load nahi ho saka."
+      "XAU/USD data load nahi hui. Check karo ke file data/XAUUSD_5m.csv ke andar hai."
     );
+
+    drawChart();
   }
 }
 
-  const pair = $("pair").value;
 
-  let price;
+/* =========================
+   CSV PARSER
+========================= */
 
-  if (pair === "BTC/USD") price = 65000;
-  else if (pair === "ETH/USD") price = 3200;
-  else if (pair === "SOL/USD") price = 150;
-  else if (pair === "XAU/USD") price = 2400;
-  else if (pair === "GBP/USD") price = 1.27;
-  else if (pair === "USD/JPY") price = 145;
-  else price = 1.10;
+function parseCSV(text) {
 
-  candles = [];
+  const lines =
+    text
+      .trim()
+      .split(/\r?\n/);
 
-  for (let i = 0; i < 180; i++) {
+  if (lines.length < 2) {
+    return [];
+  }
 
-    let volatility;
+  const header =
+    lines[0]
+      .split(",")
+      .map(x =>
+        x.trim()
+         .toLowerCase()
+         .replace(/["']/g, "")
+      );
 
-    if (price < 10) volatility = 0.0015;
-    else if (price < 5000) volatility = 5;
-    else volatility = 100;
+  const findColumn = names => {
 
-    const open = price;
+    for (const name of names) {
 
-    const move =
-      (Math.random() - 0.47) * volatility;
+      const index =
+        header.indexOf(name);
 
-    const close =
-      Math.max(0.00001, open + move);
+      if (index >= 0) {
+        return index;
+      }
+    }
+
+    return -1;
+  };
+
+
+  const timeIndex =
+    findColumn([
+      "timestamp",
+      "datetime",
+      "date",
+      "time",
+      "open_time",
+      "opentime"
+    ]);
+
+  const openIndex =
+    findColumn(["open"]);
+
+  const highIndex =
+    findColumn(["high"]);
+
+  const lowIndex =
+    findColumn(["low"]);
+
+  const closeIndex =
+    findColumn(["close"]);
+
+  const volumeIndex =
+    findColumn([
+      "volume",
+      "vol"
+    ]);
+
+
+  if (
+    openIndex < 0 ||
+    highIndex < 0 ||
+    lowIndex < 0 ||
+    closeIndex < 0
+  ) {
+
+    throw new Error(
+      "OHLC columns missing"
+    );
+  }
+
+
+  const result = [];
+
+
+  for (
+    let i = 1;
+    i < lines.length;
+    i++
+  ) {
+
+    if (!lines[i].trim()) {
+      continue;
+    }
+
+
+    const row =
+      lines[i]
+        .split(",")
+        .map(x =>
+          x.trim()
+           .replace(/^["']|["']$/g, "")
+        );
+
+
+    const open =
+      Number(row[openIndex]);
 
     const high =
-      Math.max(open, close) +
-      Math.random() * volatility;
+      Number(row[highIndex]);
 
     const low =
-      Math.min(open, close) -
-      Math.random() * volatility;
+      Number(row[lowIndex]);
 
-    candles.push({
+    const close =
+      Number(row[closeIndex]);
+
+
+    if (
+      !Number.isFinite(open) ||
+      !Number.isFinite(high) ||
+      !Number.isFinite(low) ||
+      !Number.isFinite(close)
+    ) {
+      continue;
+    }
+
+
+    result.push({
+
+      time:
+        timeIndex >= 0
+          ? row[timeIndex]
+          : "",
+
       open,
       high,
       low,
-      close
-    });
+      close,
 
-    price = close;
+      volume:
+        volumeIndex >= 0
+          ? Number(row[volumeIndex]) || 0
+          : 0
+    });
   }
 
-  candleIndex = 35;
-  openTrade = null;
-  pendingOrder = null;
 
-  render();
+  return result;
 }
 
 
@@ -168,9 +279,13 @@ async function generateCandles() {
 
 function formatPrice(value) {
 
-  if (value < 10) return value.toFixed(5);
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
 
-  if (value < 5000) return value.toFixed(2);
+  if (value < 10) {
+    return value.toFixed(5);
+  }
 
   return value.toFixed(2);
 }
@@ -183,112 +298,152 @@ function formatPrice(value) {
 function calculateRisk() {
 
   const accountBalance =
-    Number($("balance").value) || 0;
+    Number(
+      $("balance")?.value
+    ) || 0;
 
   const riskPercent =
-    Number($("risk").value) || 0;
+    Number(
+      $("risk")?.value
+    ) || 0;
 
   const entry =
-    Number($("entry").value);
+    Number(
+      $("entry")?.value
+    );
 
   const sl =
-    Number($("sl").value);
+    Number(
+      $("sl")?.value
+    );
 
   const tp =
-    Number($("tp").value);
+    Number(
+      $("tp")?.value
+    );
+
 
   const riskAmount =
     accountBalance *
     riskPercent /
     100;
 
-  $("riskAmount").value =
-    "$" + riskAmount.toFixed(2);
 
-  $("statRisk").textContent =
-    "$" + riskAmount.toFixed(2);
+  setValue(
+    "riskAmount",
+    "$" + riskAmount.toFixed(2)
+  );
+
+  setText(
+    "statRisk",
+    "$" + riskAmount.toFixed(2)
+  );
 
 
-  if (!entry || !sl || !tp) {
+  if (
+    !entry ||
+    !sl ||
+    !tp
+  ) {
 
-    $("slDistance").value = "-";
-    $("tpDistance").value = "-";
-    $("rr").value = "-";
-    $("size").value = "-";
-    $("potentialLoss").value = "-";
-    $("potentialProfit").value = "-";
+    setValue(
+      "slDistance",
+      "-"
+    );
 
-    $("riskStatus").textContent =
-      "Set Entry, SL & TP";
+    setValue(
+      "tpDistance",
+      "-"
+    );
+
+    setValue(
+      "rr",
+      "-"
+    );
+
+    setValue(
+      "size",
+      "-"
+    );
+
+    setValue(
+      "potentialLoss",
+      "-"
+    );
+
+    setValue(
+      "potentialProfit",
+      "-"
+    );
+
+    setText(
+      "riskStatus",
+      "Set Entry, SL & TP"
+    );
 
     return;
   }
 
 
   const slDistance =
-    Math.abs(entry - sl);
+    Math.abs(
+      entry - sl
+    );
 
   const tpDistance =
-    Math.abs(tp - entry);
+    Math.abs(
+      tp - entry
+    );
 
 
-  $("slDistance").value =
-    formatPrice(slDistance);
+  setValue(
+    "slDistance",
+    formatPrice(slDistance)
+  );
 
-  $("tpDistance").value =
-    formatPrice(tpDistance);
+  setValue(
+    "tpDistance",
+    formatPrice(tpDistance)
+  );
 
 
   if (slDistance <= 0) {
 
-    $("rr").value = "-";
-    $("size").value = "-";
-    $("potentialLoss").value = "-";
-    $("potentialProfit").value = "-";
+    setValue(
+      "rr",
+      "-"
+    );
+
+    setValue(
+      "size",
+      "-"
+    );
 
     return;
   }
 
 
   const rr =
-    tpDistance / slDistance;
+    tpDistance /
+    slDistance;
 
 
-  $("rr").value =
-    "1:" + rr.toFixed(2);
+  setValue(
+    "rr",
+    "1:" + rr.toFixed(2)
+  );
 
 
   /*
-    Demo position-size calculation.
+    XAU/USD demo position sizing.
 
-    For low-priced Forex-style pairs:
-    size = risk / SL distance / 100000
-
-    For larger-priced demo assets:
-    size = risk / SL distance
+    This is a simplified backtesting
+    position-size calculation.
   */
 
-  const pair =
-    $("pair").value;
-
-  let positionSize;
-
-
-  if (
-    pair === "EUR/USD" ||
-    pair === "GBP/USD"
-  ) {
-
-    positionSize =
-      riskAmount /
-      (slDistance * 100000);
-
-  } else {
-
-    positionSize =
-      riskAmount /
-      slDistance;
-  }
+  let positionSize =
+    riskAmount /
+    slDistance;
 
 
   positionSize =
@@ -298,32 +453,45 @@ function calculateRisk() {
     );
 
 
-  $("size").value =
-    positionSize.toFixed(4);
+  setValue(
+    "size",
+    positionSize.toFixed(4)
+  );
 
 
-  $("potentialLoss").value =
+  setValue(
+    "potentialLoss",
     "-$" +
-    riskAmount.toFixed(2);
+    riskAmount.toFixed(2)
+  );
 
 
-  $("potentialProfit").value =
+  setValue(
+    "potentialProfit",
     "$" +
     (
       riskAmount * rr
-    ).toFixed(2);
+    ).toFixed(2)
+  );
 
 
-  $("riskStatus").textContent =
-    "Risk calculated";
+  setText(
+    "riskStatus",
+    "Risk calculated"
+  );
 }
 
 
 /* =========================
-   CANVAS
+   CANVAS RESIZE
 ========================= */
 
 function resizeCanvas() {
+
+  if (!canvas || !ctx) {
+    return;
+  }
+
 
   const rect =
     canvas.getBoundingClientRect();
@@ -331,11 +499,13 @@ function resizeCanvas() {
   const dpr =
     window.devicePixelRatio || 1;
 
+
   canvas.width =
     rect.width * dpr;
 
   canvas.height =
     rect.height * dpr;
+
 
   ctx.setTransform(
     dpr,
@@ -346,15 +516,21 @@ function resizeCanvas() {
     0
   );
 
+
   drawChart();
 }
 
 
 /* =========================
-   CHART
+   DRAW CHART
 ========================= */
 
 function drawChart() {
+
+  if (!canvas || !ctx) {
+    return;
+  }
+
 
   const width =
     canvas.clientWidth;
@@ -362,12 +538,31 @@ function drawChart() {
   const height =
     canvas.clientHeight;
 
+
   ctx.clearRect(
     0,
     0,
     width,
     height
   );
+
+
+  if (!candles.length) {
+
+    ctx.fillStyle =
+      "#68758a";
+
+    ctx.font =
+      "14px Arial";
+
+    ctx.fillText(
+      "Loading XAU/USD historical data...",
+      25,
+      40
+    );
+
+    return;
+  }
 
 
   const visible =
@@ -380,22 +575,29 @@ function drawChart() {
     );
 
 
-  if (!visible.length) return;
+  if (!visible.length) {
+    return;
+  }
 
 
   let min =
     Math.min(
-      ...visible.map(c => c.low)
+      ...visible.map(
+        candle => candle.low
+      )
     );
 
   let max =
     Math.max(
-      ...visible.map(c => c.high)
+      ...visible.map(
+        candle => candle.high
+      )
     );
 
 
   const padding =
     (max - min) * 0.12 || 1;
+
 
   min -= padding;
   max += padding;
@@ -404,45 +606,74 @@ function drawChart() {
   function priceToY(value) {
 
     return height -
-      ((value - min) /
-      (max - min)) *
+      (
+        (value - min) /
+        (max - min)
+      ) *
       height;
   }
 
 
-  /* Grid */
+  /* GRID */
 
-  ctx.strokeStyle = "#17202d";
+  ctx.strokeStyle =
+    "#17202d";
+
   ctx.lineWidth = 1;
 
-  for (let i = 0; i <= 5; i++) {
+
+  for (
+    let i = 0;
+    i <= 5;
+    i++
+  ) {
 
     const y =
       i * height / 5;
 
+
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
+
+    ctx.moveTo(
+      0,
+      y
+    );
+
+    ctx.lineTo(
+      width,
+      y
+    );
+
     ctx.stroke();
 
 
     const value =
       max -
-      ((max - min) * i / 5);
+      (
+        (max - min) *
+        i / 5
+      );
 
-    ctx.fillStyle = "#68758a";
-    ctx.font = "11px Arial";
+
+    ctx.fillStyle =
+      "#68758a";
+
+    ctx.font =
+      "11px Arial";
+
 
     ctx.fillText(
       formatPrice(value),
       width - 70,
-      y - 5
+      Math.max(12, y - 5)
     );
   }
 
 
   const step =
-    width / visible.length;
+    width /
+    visible.length;
+
 
   const candleWidth =
     Math.max(
@@ -451,68 +682,97 @@ function drawChart() {
     );
 
 
-  visible.forEach((candle, i) => {
+  visible.forEach(
+    (candle, i) => {
 
-    const x =
-      i * step +
-      step / 2;
-
-    const yOpen =
-      priceToY(candle.open);
-
-    const yClose =
-      priceToY(candle.close);
-
-    const yHigh =
-      priceToY(candle.high);
-
-    const yLow =
-      priceToY(candle.low);
-
-    const bullish =
-      candle.close >= candle.open;
-
-    const color =
-      bullish
-        ? "#42d3a5"
-        : "#ff6579";
+      const x =
+        i * step +
+        step / 2;
 
 
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
+      const yOpen =
+        priceToY(
+          candle.open
+        );
+
+      const yClose =
+        priceToY(
+          candle.close
+        );
+
+      const yHigh =
+        priceToY(
+          candle.high
+        );
+
+      const yLow =
+        priceToY(
+          candle.low
+        );
 
 
-    /* Wick */
-
-    ctx.beginPath();
-
-    ctx.moveTo(x, yHigh);
-    ctx.lineTo(x, yLow);
-
-    ctx.stroke();
+      const bullish =
+        candle.close >=
+        candle.open;
 
 
-    /* Body */
+      const color =
+        bullish
+          ? "#42d3a5"
+          : "#ff6579";
 
-    ctx.fillRect(
-      x - candleWidth / 2,
-      Math.min(
-        yOpen,
-        yClose
-      ),
-      candleWidth,
-      Math.max(
-        1,
-        Math.abs(
-          yClose - yOpen
+
+      ctx.strokeStyle =
+        color;
+
+      ctx.fillStyle =
+        color;
+
+
+      /* WICK */
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        x,
+        yHigh
+      );
+
+      ctx.lineTo(
+        x,
+        yLow
+      );
+
+      ctx.stroke();
+
+
+      /* BODY */
+
+      ctx.fillRect(
+
+        x -
+        candleWidth / 2,
+
+        Math.min(
+          yOpen,
+          yClose
+        ),
+
+        candleWidth,
+
+        Math.max(
+          1,
+          Math.abs(
+            yClose - yOpen
+          )
         )
-      )
-    );
+      );
 
-  });
+    }
+  );
 
 
-  /* Trade levels */
+  /* TRADE LEVELS */
 
   if (openTrade) {
 
@@ -555,29 +815,48 @@ function drawChart() {
     const y =
       priceToY(value);
 
-    ctx.strokeStyle = color;
+
+    ctx.strokeStyle =
+      color;
 
     ctx.setLineDash([
       6,
       4
     ]);
 
+
     ctx.beginPath();
 
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
+    ctx.moveTo(
+      0,
+      y
+    );
+
+    ctx.lineTo(
+      width,
+      y
+    );
 
     ctx.stroke();
 
+
     ctx.setLineDash([]);
 
-    ctx.fillStyle = color;
-    ctx.font = "11px Arial";
+
+    ctx.fillStyle =
+      color;
+
+    ctx.font =
+      "11px Arial";
+
 
     ctx.fillText(
       `${label} ${formatPrice(value)}`,
       8,
-      Math.max(12, y - 5)
+      Math.max(
+        12,
+        y - 5
+      )
     );
   }
 }
@@ -589,15 +868,28 @@ function drawChart() {
 
 function nextCandle() {
 
+  if (!candles.length) {
+    return;
+  }
+
+
   if (
     candleIndex >=
     candles.length - 1
-  ) return;
+  ) {
+
+    stopPlay();
+
+    return;
+  }
+
 
   candleIndex++;
 
+
   checkPendingOrder();
   checkOpenTrade();
+
 
   render();
 }
@@ -609,7 +901,12 @@ function nextCandle() {
 
 function previousCandle() {
 
-  if (candleIndex <= 1) return;
+  if (
+    candleIndex <= 0
+  ) {
+    return;
+  }
+
 
   candleIndex--;
 
@@ -622,6 +919,16 @@ function previousCandle() {
 ========================= */
 
 function placeOrder(side) {
+
+  if (!candles.length) {
+
+    alert(
+      "Pehle XAU/USD historical data load hone do."
+    );
+
+    return;
+  }
+
 
   if (openTrade) {
 
@@ -646,26 +953,34 @@ function placeOrder(side) {
   const current =
     candles[candleIndex].close;
 
+
   const orderType =
-    $("orderType").value;
+    $("orderType")?.value ||
+    "MARKET";
 
 
   let entry;
 
 
-  if (orderType === "MARKET") {
+  if (
+    orderType === "MARKET"
+  ) {
 
-    entry = current;
+    entry =
+      current;
 
-    $("entry").value =
-      formatPrice(entry);
+    setValue(
+      "entry",
+      formatPrice(entry)
+    );
 
   } else {
 
     entry =
       Number(
-        $("entry").value
+        $("entry")?.value
       );
+
 
     if (!entry) {
 
@@ -679,10 +994,14 @@ function placeOrder(side) {
 
 
   const sl =
-    Number($("sl").value);
+    Number(
+      $("sl")?.value
+    );
 
   const tp =
-    Number($("tp").value);
+    Number(
+      $("tp")?.value
+    );
 
 
   if (!sl || !tp) {
@@ -722,10 +1041,15 @@ function placeOrder(side) {
 
 
   const size =
-    Number($("size").value);
+    Number(
+      $("size")?.value
+    );
 
 
-  if (!size || size <= 0) {
+  if (
+    !size ||
+    size <= 0
+  ) {
 
     alert(
       "Invalid position size."
@@ -737,7 +1061,8 @@ function placeOrder(side) {
 
   const trade = {
 
-    type: orderType,
+    type:
+      orderType,
 
     side,
 
@@ -751,13 +1076,17 @@ function placeOrder(side) {
   };
 
 
-  if (orderType === "MARKET") {
+  if (
+    orderType === "MARKET"
+  ) {
 
-    openTrade = trade;
+    openTrade =
+      trade;
 
   } else {
 
-    pendingOrder = trade;
+    pendingOrder =
+      trade;
   }
 
 
@@ -768,23 +1097,27 @@ function placeOrder(side) {
 
 
 /* =========================
-   LIMIT TRIGGER
+   LIMIT ORDER
 ========================= */
 
 function checkPendingOrder() {
 
-  if (!pendingOrder) return;
+  if (!pendingOrder) {
+    return;
+  }
 
 
   const candle =
     candles[candleIndex];
 
 
-  let triggered = false;
+  let triggered =
+    false;
 
 
   if (
-    pendingOrder.side === "BUY"
+    pendingOrder.side ===
+    "BUY"
   ) {
 
     if (
@@ -792,7 +1125,8 @@ function checkPendingOrder() {
       pendingOrder.entry
     ) {
 
-      triggered = true;
+      triggered =
+        true;
     }
 
   } else {
@@ -802,7 +1136,8 @@ function checkPendingOrder() {
       pendingOrder.entry
     ) {
 
-      triggered = true;
+      triggered =
+        true;
     }
   }
 
@@ -812,30 +1147,37 @@ function checkPendingOrder() {
     openTrade =
       pendingOrder;
 
-    pendingOrder = null;
+    pendingOrder =
+      null;
   }
 }
 
 
 /* =========================
-   SL / TP
+   CHECK SL / TP
 ========================= */
 
 function checkOpenTrade() {
 
-  if (!openTrade) return;
+  if (!openTrade) {
+    return;
+  }
 
 
   const candle =
     candles[candleIndex];
 
 
-  let exit = null;
-  let reason = "";
+  let exit =
+    null;
+
+  let reason =
+    "";
 
 
   if (
-    openTrade.side === "BUY"
+    openTrade.side ===
+    "BUY"
   ) {
 
     if (
@@ -843,16 +1185,22 @@ function checkOpenTrade() {
       openTrade.sl
     ) {
 
-      exit = openTrade.sl;
-      reason = "SL";
+      exit =
+        openTrade.sl;
+
+      reason =
+        "SL";
 
     } else if (
       candle.high >=
       openTrade.tp
     ) {
 
-      exit = openTrade.tp;
-      reason = "TP";
+      exit =
+        openTrade.tp;
+
+      reason =
+        "TP";
     }
 
   } else {
@@ -862,16 +1210,22 @@ function checkOpenTrade() {
       openTrade.sl
     ) {
 
-      exit = openTrade.sl;
-      reason = "SL";
+      exit =
+        openTrade.sl;
+
+      reason =
+        "SL";
 
     } else if (
       candle.low <=
       openTrade.tp
     ) {
 
-      exit = openTrade.tp;
-      reason = "TP";
+      exit =
+        openTrade.tp;
+
+      reason =
+        "TP";
     }
   }
 
@@ -895,8 +1249,14 @@ function closeTrade(
   reason
 ) {
 
+  if (!openTrade) {
+    return;
+  }
+
+
   const points =
-    openTrade.side === "BUY"
+    openTrade.side ===
+    "BUY"
 
       ? exit -
         openTrade.entry
@@ -905,29 +1265,20 @@ function closeTrade(
         exit;
 
 
-  const pair =
-    $("pair").value;
+  /*
+    XAU/USD simplified P/L.
 
-
-  let multiplier = 1;
-
-
-  if (
-    pair === "EUR/USD" ||
-    pair === "GBP/USD"
-  ) {
-
-    multiplier = 100000;
-  }
-
+    Position size is based on
+    the risk calculation above.
+  */
 
   const pl =
     points *
-    openTrade.size *
-    multiplier;
+    openTrade.size;
 
 
-  balance += pl;
+  balance +=
+    pl;
 
 
   trades.unshift({
@@ -949,7 +1300,8 @@ function closeTrade(
   });
 
 
-  openTrade = null;
+  openTrade =
+    null;
 
 
   peakBalance =
@@ -970,34 +1322,58 @@ function closeTrade(
 
 function render() {
 
-  if (!candles.length) return;
+  if (!candles.length) {
+
+    drawChart();
+
+    return;
+  }
+
+
+  candleIndex =
+    Math.max(
+      0,
+      Math.min(
+        candleIndex,
+        candles.length - 1
+      )
+    );
 
 
   const current =
     candles[candleIndex].close;
 
 
-  $("price").textContent =
-    formatPrice(current);
+  setText(
+    "price",
+    formatPrice(current)
+  );
 
 
-  $("chartPair").textContent =
-    $("pair").value;
+  setText(
+    "chartPair",
+    $("pair")?.value ||
+    "XAU/USD"
+  );
 
 
-  $("chartInfo").textContent =
-    `${$("timeframe").value} • Demo Historical Data`;
+  setText(
+    "chartInfo",
+    `5m • Candle ${candleIndex + 1}/${candles.length} • Historical XAU/USD`
+  );
 
 
   if (
-    $("orderType").value ===
+    $("orderType")?.value ===
     "MARKET" &&
     !openTrade &&
     !pendingOrder
   ) {
 
-    $("entry").value =
-      formatPrice(current);
+    setValue(
+      "entry",
+      formatPrice(current)
+    );
   }
 
 
@@ -1008,13 +1384,18 @@ function render() {
 
 
 /* =========================
-   HISTORY
+   TRADE HISTORY
 ========================= */
 
 function renderHistory() {
 
   const tbody =
     $("history");
+
+
+  if (!tbody) {
+    return;
+  }
 
 
   if (!trades.length) {
@@ -1031,29 +1412,31 @@ function renderHistory() {
 
 
   tbody.innerHTML =
-    trades.map(
-      (trade, index) => {
+    trades
+      .map(
+        (trade, index) => {
 
-        const pl =
-          trade.pl >= 0
-            ? "+" +
-              trade.pl.toFixed(2)
-            : trade.pl.toFixed(2);
+          const pl =
+            trade.pl >= 0
+              ? "+" +
+                trade.pl.toFixed(2)
+              : trade.pl.toFixed(2);
 
 
-        return `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${trade.type}</td>
-          <td>${trade.side}</td>
-          <td>${formatPrice(trade.entry)}</td>
-          <td>${formatPrice(trade.exit)}</td>
-          <td>$${pl}</td>
-          <td>${trade.reason}</td>
-        </tr>
-        `;
-      }
-    ).join("");
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${trade.type}</td>
+              <td>${trade.side}</td>
+              <td>${formatPrice(trade.entry)}</td>
+              <td>${formatPrice(trade.exit)}</td>
+              <td>$${pl}</td>
+              <td>${trade.reason}</td>
+            </tr>
+          `;
+        }
+      )
+      .join("");
 }
 
 
@@ -1063,22 +1446,28 @@ function renderHistory() {
 
 function updateStats() {
 
-  $("statBalance").textContent =
+  setText(
+    "statBalance",
     "$" +
-    balance.toFixed(2);
+    balance.toFixed(2)
+  );
 
 
   const starting =
-    Number($("balance").value) ||
-    1000;
+    Number(
+      $("balance")?.value
+    ) || 1000;
 
 
   const net =
-    balance - starting;
+    balance -
+    starting;
 
 
-  $("statPL").textContent =
-    `${net >= 0 ? "+" : ""}$${net.toFixed(2)}`;
+  setText(
+    "statPL",
+    `${net >= 0 ? "+" : ""}$${net.toFixed(2)}`
+  );
 
 
   const wins =
@@ -1096,9 +1485,11 @@ function updateStats() {
       : 0;
 
 
-  $("statWin").textContent =
+  setText(
+    "statWin",
     winRate.toFixed(0) +
-    "%";
+    "%"
+  );
 
 
   const drawdown =
@@ -1111,21 +1502,27 @@ function updateStats() {
       : 0;
 
 
-  $("statDD").textContent =
+  setText(
+    "statDD",
     drawdown.toFixed(2) +
-    "%";
+    "%"
+  );
 
 
-  $("statOpen").textContent =
+  setText(
+    "statOpen",
     openTrade
       ? `${openTrade.side} @ ${formatPrice(openTrade.entry)}`
-      : "None";
+      : "None"
+  );
 
 
-  $("statPending").textContent =
+  setText(
+    "statPending",
     pendingOrder
       ? `${pendingOrder.side} LIMIT @ ${formatPrice(pendingOrder.entry)}`
-      : "None";
+      : "None"
+  );
 }
 
 
@@ -1136,16 +1533,40 @@ function updateStats() {
 function setupPairs() {
 
   const market =
-    $("market").value;
+    $("market")?.value ||
+    "Forex";
 
 
-  $("pair").innerHTML =
+  const pairSelect =
+    $("pair");
+
+
+  if (!pairSelect) {
+    return;
+  }
+
+
+  pairSelect.innerHTML =
     pairs[market]
       .map(
         pair =>
           `<option>${pair}</option>`
       )
       .join("");
+
+
+  /*
+    XAU/USD ko default rakho
+    jab Forex market selected ho.
+  */
+
+  if (
+    market === "Forex"
+  ) {
+
+    pairSelect.value =
+      "XAU/USD";
+  }
 
 
   generateCandles();
@@ -1164,7 +1585,16 @@ function setupPairs() {
   "tp"
 ].forEach(id => {
 
-  $(id).addEventListener(
+  const element =
+    $(id);
+
+
+  if (!element) {
+    return;
+  }
+
+
+  element.addEventListener(
     "input",
     () => {
 
@@ -1174,49 +1604,91 @@ function setupPairs() {
 
     }
   );
-
 });
 
 
-$("market").addEventListener(
+/* =========================
+   MARKET CHANGE
+========================= */
+
+$("market")?.addEventListener(
   "change",
   setupPairs
 );
 
 
-$("pair").addEventListener(
+/* =========================
+   PAIR CHANGE
+========================= */
+
+$("pair")?.addEventListener(
   "change",
   generateCandles
 );
 
 
-$("timeframe").addEventListener(
+/* =========================
+   TIMEFRAME
+========================= */
+
+$("timeframe")?.addEventListener(
   "change",
-  render
+  () => {
+
+    const timeframe =
+      $("timeframe").value;
+
+
+    if (
+      $("pair").value ===
+      "XAU/USD" &&
+      timeframe === "5m"
+    ) {
+
+      generateCandles();
+
+    } else {
+
+      setText(
+        "chartInfo",
+        "Available historical file: XAU/USD 5m"
+      );
+    }
+  }
 );
 
 
-$("next").addEventListener(
+/* =========================
+   NEXT / PREVIOUS
+========================= */
+
+$("next")?.addEventListener(
   "click",
   nextCandle
 );
 
 
-$("prev").addEventListener(
+$("prev")?.addEventListener(
   "click",
   previousCandle
 );
 
 
-$("buy").addEventListener(
+/* =========================
+   BUY / SELL
+========================= */
+
+$("buy")?.addEventListener(
   "click",
-  () => placeOrder("BUY")
+  () =>
+    placeOrder("BUY")
 );
 
 
-$("sell").addEventListener(
+$("sell")?.addEventListener(
   "click",
-  () => placeOrder("SELL")
+  () =>
+    placeOrder("SELL")
 );
 
 
@@ -1224,9 +1696,14 @@ $("sell").addEventListener(
    ORDER TYPE
 ========================= */
 
-$("orderType").addEventListener(
+$("orderType")?.addEventListener(
   "change",
   () => {
+
+    if (!candles.length) {
+      return;
+    }
+
 
     const current =
       candles[candleIndex].close;
@@ -1237,16 +1714,22 @@ $("orderType").addEventListener(
       "MARKET"
     ) {
 
-      $("entry").value =
-        formatPrice(current);
+      setValue(
+        "entry",
+        formatPrice(current)
+      );
 
-      $("riskStatus").textContent =
-        "Market price selected";
+      setText(
+        "riskStatus",
+        "Market price selected"
+      );
 
     } else {
 
-      $("riskStatus").textContent =
-        "Enter your Limit price";
+      setText(
+        "riskStatus",
+        "Enter your Limit price"
+      );
     }
 
 
@@ -1260,78 +1743,120 @@ $("orderType").addEventListener(
    PLAY
 ========================= */
 
-$("play").addEventListener(
+$("play")?.addEventListener(
   "click",
   () => {
 
     if (timer) {
 
-      clearInterval(timer);
+      stopPlay();
 
-      timer = null;
-
-      $("play").textContent =
-        "▶ Play";
-
-    } else {
-
-      timer =
-        setInterval(
-          nextCandle,
-          Number(
-            $("speed").value
-          )
-        );
-
-      $("play").textContent =
-        "⏸ Pause";
+      return;
     }
+
+
+    if (!candles.length) {
+
+      alert(
+        "Pehle XAU/USD data load hone do."
+      );
+
+      return;
+    }
+
+
+    const speed =
+      Number(
+        $("speed")?.value
+      ) || 700;
+
+
+    timer =
+      setInterval(
+        nextCandle,
+        speed
+      );
+
+
+    setText(
+      "play",
+      "⏸ Pause"
+    );
   }
 );
 
 
-$("speed").addEventListener(
+/* =========================
+   SPEED
+========================= */
+
+$("speed")?.addEventListener(
   "input",
   () => {
 
-    if (timer) {
-
-      clearInterval(timer);
-
-      timer =
-        setInterval(
-          nextCandle,
-          Number(
-            $("speed").value
-          )
-        );
+    if (!timer) {
+      return;
     }
+
+
+    clearInterval(
+      timer
+    );
+
+
+    const speed =
+      Number(
+        $("speed").value
+      ) || 700;
+
+
+    timer =
+      setInterval(
+        nextCandle,
+        speed
+      );
   }
 );
+
+
+/* =========================
+   STOP PLAY
+========================= */
+
+function stopPlay() {
+
+  if (timer) {
+
+    clearInterval(
+      timer
+    );
+
+    timer =
+      null;
+  }
+
+
+  setText(
+    "play",
+    "▶ Play"
+  );
+}
 
 
 /* =========================
    RESET
 ========================= */
 
-$("reset").addEventListener(
+$("reset")?.addEventListener(
   "click",
-  () => {
+  async () => {
 
-    if (timer) {
-
-      clearInterval(timer);
-
-      timer = null;
-
-      $("play").textContent =
-        "▶ Play";
-    }
+    stopPlay();
 
 
     balance =
       Number(
-        $("balance").value
+        $("balance")?.value
       ) || 1000;
 
 
@@ -1345,10 +1870,11 @@ $("reset").addEventListener(
     pendingOrder = null;
 
 
-    generateCandles();
-
     renderHistory();
     updateStats();
+
+
+    await generateCandles();
   }
 );
 
@@ -1357,15 +1883,16 @@ $("reset").addEventListener(
    CLEAR HISTORY
 ========================= */
 
-$("clear").addEventListener(
+$("clear")?.addEventListener(
   "click",
   () => {
 
     trades = [];
 
+
     balance =
       Number(
-        $("balance").value
+        $("balance")?.value
       ) || 1000;
 
 
@@ -1379,6 +1906,86 @@ $("clear").addEventListener(
 );
 
 
+/* =========================
+   EXPORT
+========================= */
+
+$("export")?.addEventListener(
+  "click",
+  () => {
+
+    if (!trades.length) {
+
+      alert(
+        "Export karne ke liye closed trades chahiye."
+      );
+
+      return;
+    }
+
+
+    let csv =
+      "Type,Side,Entry,Exit,P/L,Reason\n";
+
+
+    trades.forEach(
+      trade => {
+
+        csv +=
+          `${trade.type},${trade.side},${trade.entry},${trade.exit},${trade.pl},${trade.reason}\n`;
+      }
+    );
+
+
+    const blob =
+      new Blob(
+        [csv],
+        {
+          type:
+            "text/csv"
+        }
+      );
+
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+
+    const a =
+      document.createElement(
+        "a"
+      );
+
+
+    a.href =
+      url;
+
+    a.download =
+      "backtest-results.csv";
+
+
+    document.body.appendChild(
+      a
+    );
+
+    a.click();
+
+    a.remove();
+
+
+    URL.revokeObjectURL(
+      url
+    );
+  }
+);
+
+
+/* =========================
+   RESIZE
+========================= */
+
 window.addEventListener(
   "resize",
   resizeCanvas
@@ -1391,7 +1998,7 @@ window.addEventListener(
 
 balance =
   Number(
-    $("balance").value
+    $("balance")?.value
   ) || 1000;
 
 
@@ -1399,10 +2006,9 @@ peakBalance =
   balance;
 
 
-setupPairs();
-
 renderHistory();
-
+updateStats();
 resizeCanvas();
 
-calculateRisk();
+setupPairs();
+```

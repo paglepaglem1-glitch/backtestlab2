@@ -24,7 +24,87 @@ let timer = null;
    CANDLE DATA
 ========================= */
 
-function generateCandles() {
+async function generateCandles() {
+
+  const pair = $("pair").value;
+
+  const symbolMap = {
+    "EUR/USD": "EURUSD",
+    "GBP/USD": "GBPUSD",
+    "USD/JPY": "USDJPY",
+    "XAU/USD": "XAUUSD",
+    "BTC/USD": "BTCUSD",
+    "ETH/USD": "ETHUSD",
+    "SOL/USD": "SOLUSD"
+  };
+
+  const symbol = symbolMap[pair];
+
+  const timeframeMap = {
+    "5m": "5m",
+    "15m": "15m",
+    "1H": "1h",
+    "4H": "4h",
+    "1D": "1d"
+  };
+
+  const interval =
+    timeframeMap[$("timeframe").value] || "5m";
+
+  try {
+
+    $("chartInfo").textContent =
+      "Loading real market data...";
+
+    const url =
+      `https://biquote.io/api/${symbol}/ohlc?interval=${interval}&limit=1000`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Data request failed");
+    }
+
+    const data = await response.json();
+
+    if (!data.bars || !data.bars.length) {
+      throw new Error("No candles received");
+    }
+
+    candles = data.bars
+      .filter(candle => !candle.isOpen)
+      .reverse()
+      .map(candle => ({
+        open: Number(candle.open),
+        high: Number(candle.high),
+        low: Number(candle.low),
+        close: Number(candle.close),
+        time: candle.openTime
+      }));
+
+    candleIndex =
+      Math.min(50, candles.length - 1);
+
+    openTrade = null;
+    pendingOrder = null;
+
+    $("chartInfo").textContent =
+      `${$("timeframe").value} • Real Historical Data`;
+
+    render();
+
+  } catch (error) {
+
+    console.error(error);
+
+    $("chartInfo").textContent =
+      "Unable to load market data";
+
+    alert(
+      "Historical data load nahi ho saka."
+    );
+  }
+}
 
   const pair = $("pair").value;
 

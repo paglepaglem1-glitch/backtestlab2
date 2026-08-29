@@ -1,11 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>BacktestLab</title>
 
-<!-- ZIP reader -->
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <style>
@@ -227,6 +227,7 @@ th{
   }
 }
 </style>
+
 </head>
 
 <body>
@@ -238,126 +239,114 @@ th{
 
 <main>
 
-<!-- MARKET -->
 <div class="panel">
 
   <div class="grid">
 
-    <div>
-      <label>Market</label>
-      <select id="market">
-        <option>Forex</option>
-        <option>Crypto</option>
-        <option>Metals</option>
-      </select>
-    </div>
+```
+<div>
+  <label>Market</label>
+  <select id="market">
+    <option value="Forex">Forex</option>
+    <option value="Metals">Metals</option>
+    <option value="Crypto">Crypto</option>
+  </select>
+</div>
 
-    <div>
-      <label>Pair</label>
-      <select id="pair">
-        <option>EUR/USD</option>
-        <option>BTC/USD</option>
-        <option>XAU/USD</option>
-      </select>
-    </div>
+<div>
+  <label>Pair</label>
+  <select id="pair"></select>
+</div>
 
-    <div>
-      <label>Timeframe</label>
-      <select id="timeframe">
-        <option>5m</option>
-        <option>15m</option>
-        <option>1H</option>
-        <option>4H</option>
-        <option>1D</option>
-      </select>
-    </div>
+<div>
+  <label>Timeframe</label>
+  <select id="timeframe">
+    <option value="5m">5m</option>
+    <option value="15m">15m</option>
+    <option value="1H">1H</option>
+    <option value="4H">4H</option>
+    <option value="1D">1D</option>
+  </select>
+</div>
 
-    <div>
-      <label>Order Type</label>
-      <select id="orderType">
-        <option>MARKET</option>
-        <option>LIMIT</option>
-      </select>
-    </div>
+<div>
+  <label>Order Type</label>
+  <select id="orderType">
+    <option value="MARKET">MARKET</option>
+    <option value="LIMIT">LIMIT</option>
+  </select>
+</div>
+```
 
   </div>
 
   <div class="upload">
 
-    <label>Historical CSV / ZIP</label>
+```
+<label>Historical CSV / ZIP</label>
 
-    <input
-      id="csvFile"
-      type="file"
-      accept=".csv,.zip"
-    >
+<input
+  id="csvFile"
+  type="file"
+  accept=".csv,.zip"
+>
 
-    <div class="fileInfo" id="fileInfo">
-      CSV ya ZIP select karo
-    </div>
+<div class="fileInfo" id="fileInfo">
+  CSV ya ZIP select karo
+</div>
 
-    <div style="margin-top:10px;color:#7f8ca3;font-size:11px">
-      CSV format:
-      timestamp,open,high,low,close,volume
-    </div>
+<div style="margin-top:10px;color:#7f8ca3;font-size:11px">
+  CSV format: timestamp,open,high,low,close,volume
+</div>
+```
 
   </div>
 
 </div>
 
-
-<!-- CHART -->
 <div class="chartWrap">
 
   <div class="chartTop">
 
-    <div>
+```
+<div>
 
-      <strong id="chartPair">EUR/USD</strong>
+  <strong id="chartPair">EUR/USD</strong>
 
-      <div
-        id="chartInfo"
-        style="color:#7f8ca3;font-size:11px;margin-top:5px"
-      >
-        No CSV loaded
-      </div>
+  <div
+    id="chartInfo"
+    style="color:#7f8ca3;font-size:11px;margin-top:5px"
+  >
+    No CSV loaded
+  </div>
 
-    </div>
+</div>
 
-    <div id="price">---</div>
+<div id="price">---</div>
+```
 
   </div>
 
-  <canvas id="chart"></canvas>
+<canvas id="chart"></canvas>
 
   <div class="controls">
 
-    <button id="prev">
-      ◀ Previous
-    </button>
+```
+<button id="prev">◀ Previous</button>
 
-    <button id="next" class="blue">
-      Next Candle ▶
-    </button>
+<button id="next" class="blue">Next Candle ▶</button>
 
-    <button id="play">
-      ▶ Play
-    </button>
+<button id="play">▶ Play</button>
 
-    <button id="reset">
-      Reset
-    </button>
+<button id="reset">Reset</button>
 
-    <button id="export">
-      Export Trades
-    </button>
+<button id="export">Export Trades</button>
+```
 
   </div>
 
 </div>
 
-
-<!-- RISK -->
 <div class="panel">
 
   <div style="margin-bottom:15px">
@@ -366,74 +355,72 @@ th{
 
   <div class="riskGrid">
 
-    <div>
-      <label>Balance</label>
-      <input id="balance" type="number" value="1000">
-    </div>
+```
+<div>
+  <label>Balance</label>
+  <input id="balance" type="number" value="1000">
+</div>
 
-    <div>
-      <label>Risk %</label>
-      <input id="risk" type="number" value="1" step="0.1">
-    </div>
+<div>
+  <label>Risk %</label>
+  <input id="risk" type="number" value="1" step="0.1">
+</div>
 
-    <div>
-      <label>Entry</label>
-      <input id="entry" type="number">
-    </div>
+<div>
+  <label>Entry</label>
+  <input id="entry" type="number">
+</div>
 
-    <div>
-      <label>Stop Loss</label>
-      <input id="sl" type="number">
-    </div>
+<div>
+  <label>Stop Loss</label>
+  <input id="sl" type="number">
+</div>
 
-    <div>
-      <label>Take Profit</label>
-      <input id="tp" type="number">
-    </div>
+<div>
+  <label>Take Profit</label>
+  <input id="tp" type="number">
+</div>
 
-    <div>
-      <label>Risk Amount</label>
-      <input id="riskAmount" readonly>
-    </div>
+<div>
+  <label>Risk Amount</label>
+  <input id="riskAmount" readonly>
+</div>
 
-    <div>
-      <label>SL Distance</label>
-      <input id="slDistance" readonly>
-    </div>
+<div>
+  <label>SL Distance</label>
+  <input id="slDistance" readonly>
+</div>
 
-    <div>
-      <label>TP Distance</label>
-      <input id="tpDistance" readonly>
-    </div>
+<div>
+  <label>TP Distance</label>
+  <input id="tpDistance" readonly>
+</div>
 
-    <div>
-      <label>Risk / Reward</label>
-      <input id="rr" readonly>
-    </div>
+<div>
+  <label>Risk / Reward</label>
+  <input id="rr" readonly>
+</div>
 
-    <div>
-      <label>Position Size</label>
-      <input id="size" readonly>
-    </div>
+<div>
+  <label>Position Size</label>
+  <input id="size" readonly>
+</div>
+```
 
   </div>
 
   <div class="tradeButtons">
 
-    <button id="buy" class="green">
-      BUY
-    </button>
+```
+<button id="buy" class="green">BUY</button>
 
-    <button id="sell" class="red">
-      SELL
-    </button>
+<button id="sell" class="red">SELL</button>
+```
 
   </div>
 
 </div>
 
-
-<!-- STATS -->
 <div class="stats">
 
   <div class="stat">
@@ -468,8 +455,6 @@ th{
 
 </div>
 
-
-<!-- HISTORY -->
 <div class="panel" style="margin-top:16px">
 
   <div style="
@@ -477,43 +462,43 @@ th{
     justify-content:space-between;
     margin-bottom:15px">
 
-    <strong>Trade History</strong>
+```
+<strong>Trade History</strong>
 
-    <button id="clear" style="width:auto">
-      Clear
-    </button>
+<button id="clear" style="width:auto">
+  Clear
+</button>
+```
 
   </div>
 
   <div style="overflow-x:auto">
 
-    <table>
+```
+<table>
 
-      <thead>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Type</th>
+      <th>Side</th>
+      <th>Entry</th>
+      <th>Exit</th>
+      <th>P/L</th>
+      <th>Reason</th>
+    </tr>
+  </thead>
 
-        <tr>
-          <th>#</th>
-          <th>Type</th>
-          <th>Side</th>
-          <th>Entry</th>
-          <th>Exit</th>
-          <th>P/L</th>
-          <th>Reason</th>
-        </tr>
+  <tbody id="history">
 
-      </thead>
+    <tr>
+      <td colspan="7">No closed trades</td>
+    </tr>
 
-      <tbody id="history">
+  </tbody>
 
-        <tr>
-          <td colspan="7">
-            No closed trades
-          </td>
-        </tr>
-
-      </tbody>
-
-    </table>
+</table>
+```
 
   </div>
 
@@ -521,22 +506,102 @@ th{
 
 </main>
 
-
 <script>
 
-const $ = id =>
-  document.getElementById(id);
+const $ = id => document.getElementById(id);
 
+
+/* =========================
+   MARKET / PAIRS
+========================= */
+
+const marketPairs = {
+
+  Forex: [
+    "EUR/USD",
+    "GBP/USD",
+    "USD/JPY"
+  ],
+
+  Metals: [
+    "XAU/USD"
+  ],
+
+  Crypto: [
+    "BTC/USD",
+    "ETH/USD",
+    "SOL/USD"
+  ]
+
+};
+
+
+function setupPairs(){
+
+  const market =
+    $("market").value;
+
+  const list =
+    marketPairs[market] || [];
+
+
+  $("pair").innerHTML =
+    list.map(
+      pair =>
+        `<option value="${pair}">
+          ${pair}
+        </option>`
+    ).join("");
+
+
+  $("chartPair").textContent =
+    $("pair").value;
+
+
+  calculateRisk();
+
+  render();
+
+}
+
+
+$("market").addEventListener(
+  "change",
+  setupPairs
+);
+
+
+$("pair").addEventListener(
+  "change",
+  ()=>{
+
+    $("chartPair").textContent =
+      $("pair").value;
+
+    calculateRisk();
+
+    render();
+
+  }
+);
+
+
+/* =========================
+   VARIABLES
+========================= */
 
 let candles = [];
+
 let candleIndex = 0;
 
 let openTrade = null;
+
 let pendingOrder = null;
 
 let trades = [];
 
 let balance = 1000;
+
 let peakBalance = 1000;
 
 let timer = null;
@@ -550,7 +615,8 @@ $("csvFile").addEventListener(
   "change",
   async function(){
 
-    const file = this.files[0];
+    const file =
+      this.files[0];
 
     if(!file) return;
 
@@ -564,8 +630,6 @@ $("csvFile").addEventListener(
       let csvText = "";
 
 
-      /* CSV */
-
       if(
         file.name
           .toLowerCase()
@@ -577,8 +641,6 @@ $("csvFile").addEventListener(
 
       }
 
-
-      /* ZIP */
 
       else if(
         file.name
@@ -613,10 +675,35 @@ $("csvFile").addEventListener(
         }
 
 
-        /* First CSV */
+        /*
+          ZIP ke andar jitni CSV hain
+          unmein selected pair wali CSV
+          ko priority do.
+        */
 
-        const selectedCSV =
-          csvFiles[0];
+        const selectedPair =
+          $("pair").value
+            .replace("/","")
+            .toLowerCase();
+
+
+        let selectedCSV =
+          csvFiles.find(
+            name =>
+              name
+                .toLowerCase()
+                .includes(
+                  selectedPair
+                )
+          );
+
+
+        if(!selectedCSV){
+
+          selectedCSV =
+            csvFiles[0];
+
+        }
 
 
         $("fileInfo").textContent =
@@ -639,8 +726,6 @@ $("csvFile").addEventListener(
       }
 
 
-      /* Parse */
-
       candles =
         parseCSV(csvText);
 
@@ -648,7 +733,7 @@ $("csvFile").addEventListener(
       if(!candles.length){
 
         throw new Error(
-          "Valid candles nahi mili."
+          "Valid OHLC candles nahi mili."
         );
 
       }
@@ -662,6 +747,7 @@ $("csvFile").addEventListener(
 
 
       openTrade = null;
+
       pendingOrder = null;
 
 
@@ -682,7 +768,6 @@ $("csvFile").addEventListener(
 
 
       render();
-
 
     }
 
@@ -726,27 +811,29 @@ function parseCSV(text){
       .split(/\r?\n/);
 
 
-  if(lines.length < 2){
+  if(lines.length < 2)
     return [];
-  }
 
 
   const header =
     lines[0]
       .split(",")
-      .map(x =>
-        x.trim().toLowerCase()
+      .map(
+        x =>
+          x.trim()
+           .toLowerCase()
       );
 
 
   const timeIndex =
-    header.findIndex(x =>
-      [
-        "timestamp",
-        "date",
-        "datetime",
-        "time"
-      ].includes(x)
+    header.findIndex(
+      x =>
+        [
+          "timestamp",
+          "date",
+          "datetime",
+          "time"
+        ].includes(x)
     );
 
 
@@ -774,7 +861,7 @@ function parseCSV(text){
   ){
 
     throw new Error(
-      "OHLC columns missing"
+      "CSV mein Open, High, Low, Close columns chahiye."
     );
 
   }
@@ -784,17 +871,17 @@ function parseCSV(text){
 
 
   for(
-    let i=1;
-    i<lines.length;
+    let i = 1;
+    i < lines.length;
     i++
   ){
 
+    if(!lines[i].trim())
+      continue;
+
+
     const row =
       lines[i].split(",");
-
-
-    if(row.length < 5)
-      continue;
 
 
     const open =
@@ -850,7 +937,26 @@ function parseCSV(text){
 
 
 /* =========================
-   CHART
+   PRICE FORMAT
+========================= */
+
+function format(price){
+
+  if(!Number.isFinite(price))
+    return "---";
+
+
+  if(price < 10)
+    return price.toFixed(5);
+
+
+  return price.toFixed(2);
+
+}
+
+
+/* =========================
+   CANVAS
 ========================= */
 
 function resize(){
@@ -894,11 +1000,14 @@ function resize(){
 }
 
 
+/* =========================
+   CHART
+========================= */
+
 function drawChart(){
 
   const canvas =
     $("chart");
-
 
   const ctx =
     canvas.getContext("2d");
@@ -906,7 +1015,6 @@ function drawChart(){
 
   const width =
     canvas.clientWidth;
-
 
   const height =
     canvas.clientHeight;
@@ -930,11 +1038,10 @@ function drawChart(){
 
 
     ctx.fillText(
-      "Upload a historical CSV or ZIP to start",
+      "Upload historical CSV or ZIP to start",
       25,
       40
     );
-
 
     return;
 
@@ -951,15 +1058,23 @@ function drawChart(){
     );
 
 
+  if(!visible.length)
+    return;
+
+
   let min =
     Math.min(
-      ...visible.map(x => x.low)
+      ...visible.map(
+        x => x.low
+      )
     );
 
 
   let max =
     Math.max(
-      ...visible.map(x => x.high)
+      ...visible.map(
+        x => x.high
+      )
     );
 
 
@@ -968,6 +1083,7 @@ function drawChart(){
 
 
   min -= padding;
+
   max += padding;
 
 
@@ -988,7 +1104,11 @@ function drawChart(){
   ctx.lineWidth = 1;
 
 
-  for(let i=0;i<=5;i++){
+  for(
+    let i=0;
+    i<=5;
+    i++
+  ){
 
     const y =
       i * height / 5;
@@ -1001,6 +1121,25 @@ function drawChart(){
     ctx.lineTo(width,y);
 
     ctx.stroke();
+
+
+    const value =
+      max -
+      ((max-min)*i/5);
+
+
+    ctx.fillStyle =
+      "#68758a";
+
+    ctx.font =
+      "11px Arial";
+
+
+    ctx.fillText(
+      format(value),
+      width - 70,
+      Math.max(12,y-5)
+    );
 
   }
 
@@ -1054,8 +1193,6 @@ function drawChart(){
         priceY(c.close);
 
 
-      /* Wick */
-
       ctx.beginPath();
 
       ctx.moveTo(
@@ -1071,8 +1208,6 @@ function drawChart(){
       ctx.stroke();
 
 
-      /* Body */
-
       ctx.fillRect(
 
         x - candleWidth / 2,
@@ -1087,7 +1222,7 @@ function drawChart(){
         Math.max(
           1,
           Math.abs(
-            yClose - yOpen
+            yClose-yOpen
           )
         )
 
@@ -1099,19 +1234,19 @@ function drawChart(){
 
   if(openTrade){
 
-    level(
+    drawLevel(
       openTrade.entry,
       "#35d39a",
       "ENTRY"
     );
 
-    level(
+    drawLevel(
       openTrade.sl,
       "#ff5c72",
       "SL"
     );
 
-    level(
+    drawLevel(
       openTrade.tp,
       "#6d9cff",
       "TP"
@@ -1122,7 +1257,7 @@ function drawChart(){
 
   if(pendingOrder){
 
-    level(
+    drawLevel(
       pendingOrder.entry,
       "#f2b84b",
       "LIMIT"
@@ -1131,7 +1266,7 @@ function drawChart(){
   }
 
 
-  function level(
+  function drawLevel(
     price,
     color,
     label
@@ -1168,7 +1303,6 @@ function drawChart(){
     ctx.fillStyle =
       color;
 
-
     ctx.font =
       "11px Arial";
 
@@ -1176,10 +1310,7 @@ function drawChart(){
     ctx.fillText(
       `${label} ${format(price)}`,
       8,
-      Math.max(
-        14,
-        y - 5
-      )
+      Math.max(14,y-5)
     );
 
   }
@@ -1188,25 +1319,7 @@ function drawChart(){
 
 
 /* =========================
-   PRICE FORMAT
-========================= */
-
-function format(price){
-
-  if(price < 10){
-
-    return price.toFixed(5);
-
-  }
-
-
-  return price.toFixed(2);
-
-}
-
-
-/* =========================
-   RISK
+   RISK CALCULATION
 ========================= */
 
 function calculateRisk(){
@@ -1258,17 +1371,10 @@ function calculateRisk(){
     !tp
   ){
 
-    $("slDistance").value =
-      "-";
-
-    $("tpDistance").value =
-      "-";
-
-    $("rr").value =
-      "-";
-
-    $("size").value =
-      "-";
+    $("slDistance").value = "-";
+    $("tpDistance").value = "-";
+    $("rr").value = "-";
+    $("size").value = "-";
 
     return;
 
@@ -1277,23 +1383,20 @@ function calculateRisk(){
 
   const slDistance =
     Math.abs(
-      entry - sl
+      entry-sl
     );
 
 
   const tpDistance =
     Math.abs(
-      tp - entry
+      tp-entry
     );
 
 
   if(slDistance <= 0){
 
-    $("rr").value =
-      "-";
-
-    $("size").value =
-      "-";
+    $("rr").value = "-";
+    $("size").value = "-";
 
     return;
 
@@ -1318,12 +1421,27 @@ function calculateRisk(){
     rr.toFixed(2);
 
 
+  const pair =
+    $("pair").value;
+
+
   let size;
 
 
+  /*
+    Forex:
+    Standard contract approximation.
+
+    XAU/USD:
+    1 lot = 100 oz approximation.
+
+    Crypto/metals use a simplified
+    risk-distance calculation.
+  */
+
   if(
-    $("pair").value ===
-    "EUR/USD"
+    pair === "EUR/USD" ||
+    pair === "GBP/USD"
   ){
 
     size =
@@ -1331,6 +1449,32 @@ function calculateRisk(){
       (
         slDistance *
         100000
+      );
+
+  }
+
+  else if(
+    pair === "USD/JPY"
+  ){
+
+    size =
+      riskMoney /
+      (
+        slDistance *
+        1000
+      );
+
+  }
+
+  else if(
+    pair === "XAU/USD"
+  ){
+
+    size =
+      riskMoney /
+      (
+        slDistance *
+        100
       );
 
   }
@@ -1345,7 +1489,10 @@ function calculateRisk(){
 
 
   $("size").value =
-    size.toFixed(4);
+    Math.max(
+      0,
+      size
+    ).toFixed(4);
 
 }
 
@@ -1371,6 +1518,17 @@ function placeOrder(side){
 
     alert(
       "Current trade close hone do."
+    );
+
+    return;
+
+  }
+
+
+  if(pendingOrder){
+
+    alert(
+      "Ek pending order already hai."
     );
 
     return;
@@ -1477,7 +1635,7 @@ function placeOrder(side){
     );
 
 
-  if(!size){
+  if(!size || size <= 0){
 
     alert(
       "Position size calculate nahi hui."
@@ -1489,6 +1647,9 @@ function placeOrder(side){
 
 
   const trade = {
+
+    pair:
+      $("pair").value,
 
     type:
       $("orderType").value,
@@ -1525,6 +1686,7 @@ function placeOrder(side){
 
 
   drawChart();
+
   updateStats();
 
 }
@@ -1542,7 +1704,7 @@ function nextCandle(){
 
   if(
     candleIndex >=
-    candles.length - 1
+    candles.length-1
   ){
 
     stopPlay();
@@ -1556,6 +1718,7 @@ function nextCandle(){
 
 
   checkPending();
+
   checkTrade();
 
 
@@ -1570,6 +1733,10 @@ function nextCandle(){
 
 function previousCandle(){
 
+  if(!candles.length)
+    return;
+
+
   if(candleIndex <= 0)
     return;
 
@@ -1582,7 +1749,7 @@ function previousCandle(){
 
 
 /* =========================
-   LIMIT CHECK
+   PENDING ORDER
 ========================= */
 
 function checkPending(){
@@ -1596,10 +1763,8 @@ function checkPending(){
 
 
   if(
-    pendingOrder.side ===
-    "BUY" &&
-    c.low <=
-    pendingOrder.entry
+    pendingOrder.side === "BUY" &&
+    c.low <= pendingOrder.entry
   ){
 
     openTrade =
@@ -1611,12 +1776,9 @@ function checkPending(){
   }
 
 
-  if(
-    pendingOrder &&
-    pendingOrder.side ===
-    "SELL" &&
-    c.high >=
-    pendingOrder.entry
+  else if(
+    pendingOrder.side === "SELL" &&
+    c.high >= pendingOrder.entry
   ){
 
     openTrade =
@@ -1650,8 +1812,7 @@ function checkTrade(){
 
 
   if(
-    openTrade.side ===
-    "BUY"
+    openTrade.side === "BUY"
   ){
 
     if(
@@ -1735,15 +1896,15 @@ function closeTrade(
 ){
 
   const pair =
-    $("pair").value;
+    openTrade.pair;
 
 
   let multiplier = 1;
 
 
   if(
-    pair ===
-    "EUR/USD"
+    pair === "EUR/USD" ||
+    pair === "GBP/USD"
   ){
 
     multiplier =
@@ -1751,10 +1912,27 @@ function closeTrade(
 
   }
 
+  else if(
+    pair === "USD/JPY"
+  ){
+
+    multiplier =
+      1000;
+
+  }
+
+  else if(
+    pair === "XAU/USD"
+  ){
+
+    multiplier =
+      100;
+
+  }
+
 
   const difference =
-    openTrade.side ===
-    "BUY"
+    openTrade.side === "BUY"
 
       ? exit -
         openTrade.entry
@@ -1773,6 +1951,8 @@ function closeTrade(
 
 
   trades.unshift({
+
+    pair,
 
     type:
       openTrade.type,
@@ -1804,6 +1984,7 @@ function closeTrade(
 
 
   renderHistory();
+
   updateStats();
 
 }
@@ -1817,7 +1998,15 @@ function render(){
 
   if(!candles.length){
 
+    $("price").textContent =
+      "---";
+
+    $("chartPair").textContent =
+      $("pair").value;
+
     drawChart();
+
+    updateStats();
 
     return;
 
@@ -1841,8 +2030,7 @@ function render(){
 
 
   if(
-    $("orderType").value ===
-    "MARKET" &&
+    $("orderType").value === "MARKET" &&
     !openTrade &&
     !pendingOrder
   ){
@@ -1919,8 +2107,7 @@ function updateStats(){
 
 
   $("statDD").textContent =
-    dd.toFixed(2) +
-    "%";
+    dd.toFixed(2) + "%";
 
 
   $("statOpen").textContent =
@@ -1961,7 +2148,7 @@ function renderHistory(){
 
   $("history").innerHTML =
     trades.map(
-      (t,i) => `
+      (t,i)=>`
 
       <tr>
 
@@ -2013,20 +2200,16 @@ $("reset").addEventListener(
 
     trades = [];
 
+    openTrade = null;
 
-    openTrade =
-      null;
-
-
-    pendingOrder =
-      null;
+    pendingOrder = null;
 
 
     candleIndex =
       candles.length
         ? Math.min(
             50,
-            candles.length - 1
+            candles.length-1
           )
         : 0;
 
@@ -2080,32 +2263,31 @@ $("play").addEventListener(
 
       stopPlay();
 
-    }
-
-    else{
-
-      if(!candles.length){
-
-        alert(
-          "Pehle CSV/ZIP upload karo."
-        );
-
-        return;
-
-      }
-
-
-      $("play").textContent =
-        "⏸ Pause";
-
-
-      timer =
-        setInterval(
-          nextCandle,
-          700
-        );
+      return;
 
     }
+
+
+    if(!candles.length){
+
+      alert(
+        "Pehle CSV/ZIP upload karo."
+      );
+
+      return;
+
+    }
+
+
+    $("play").textContent =
+      "⏸ Pause";
+
+
+    timer =
+      setInterval(
+        nextCandle,
+        700
+      );
 
   }
 );
@@ -2115,12 +2297,9 @@ function stopPlay(){
 
   if(timer){
 
-    clearInterval(
-      timer
-    );
+    clearInterval(timer);
 
-    timer =
-      null;
+    timer = null;
 
   }
 
@@ -2190,17 +2369,33 @@ $("sell").addEventListener(
 
 
 /* =========================
-   PAIR
+   ORDER TYPE
 ========================= */
 
-$("pair").addEventListener(
+$("orderType").addEventListener(
   "change",
   ()=>{
 
-    $("chartPair").textContent =
-      $("pair").value;
+    if(!candles.length)
+      return;
+
+
+    if(
+      $("orderType").value ===
+      "MARKET"
+    ){
+
+      $("entry").value =
+        format(
+          candles[candleIndex].close
+        );
+
+    }
+
 
     calculateRisk();
+
+    drawChart();
 
   }
 );
@@ -2241,14 +2436,14 @@ $("export").addEventListener(
 
 
     let csv =
-      "Type,Side,Entry,Exit,P/L,Reason\n";
+      "Pair,Type,Side,Entry,Exit,P/L,Reason\n";
 
 
     trades.forEach(
       t => {
 
         csv +=
-          `${t.type},${t.side},${t.entry},${t.exit},${t.pl},${t.reason}\n`;
+          `${t.pair},${t.type},${t.side},${t.entry},${t.exit},${t.pl},${t.reason}\n`;
 
       }
     );
@@ -2257,28 +2452,19 @@ $("export").addEventListener(
     const blob =
       new Blob(
         [csv],
-        {
-          type:
-            "text/csv"
-        }
+        {type:"text/csv"}
       );
 
 
     const url =
-      URL.createObjectURL(
-        blob
-      );
+      URL.createObjectURL(blob);
 
 
     const a =
-      document.createElement(
-        "a"
-      );
+      document.createElement("a");
 
 
-    a.href =
-      url;
-
+    a.href = url;
 
     a.download =
       "backtest-results.csv";
@@ -2287,9 +2473,7 @@ $("export").addEventListener(
     a.click();
 
 
-    URL.revokeObjectURL(
-      url
-    );
+    URL.revokeObjectURL(url);
 
   }
 );
@@ -2305,11 +2489,23 @@ window.addEventListener(
 );
 
 
-resize();
+balance =
+  Number(
+    $("balance").value
+  ) || 1000;
+
+
+peakBalance =
+  balance;
+
+
+setupPairs();
 
 renderHistory();
 
 updateStats();
+
+resize();
 
 </script>
 

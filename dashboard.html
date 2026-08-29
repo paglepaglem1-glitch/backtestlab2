@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>BacktestLab</title>
 
+<!-- ZIP reader -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -196,6 +199,12 @@ th{
   margin-top:10px;
 }
 
+.fileInfo{
+  margin-top:9px;
+  color:#7f8ca3;
+  font-size:11px;
+}
+
 @media(max-width:900px){
   .grid,.riskGrid,.stats{
     grid-template-columns:repeat(2,1fr);
@@ -224,13 +233,14 @@ th{
 
 <header>
   <div class="logo">Backtest<span>Lab</span></div>
-  <div id="status">CSV Backtest Mode</div>
+  <div id="status">CSV / ZIP Backtest Mode</div>
 </header>
 
 <main>
 
 <!-- MARKET -->
 <div class="panel">
+
   <div class="grid">
 
     <div>
@@ -273,14 +283,26 @@ th{
   </div>
 
   <div class="upload">
-    <label>Historical CSV</label>
-    <input id="csvFile" type="file" accept=".csv,.zip">
+
+    <label>Historical CSV / ZIP</label>
+
+    <input
+      id="csvFile"
+      type="file"
+      accept=".csv,.zip"
+    >
+
+    <div class="fileInfo" id="fileInfo">
+      CSV ya ZIP select karo
+    </div>
 
     <div style="margin-top:10px;color:#7f8ca3;font-size:11px">
       CSV format:
       timestamp,open,high,low,close,volume
     </div>
+
   </div>
+
 </div>
 
 
@@ -288,28 +310,48 @@ th{
 <div class="chartWrap">
 
   <div class="chartTop">
+
     <div>
+
       <strong id="chartPair">EUR/USD</strong>
-      <div id="chartInfo"
-           style="color:#7f8ca3;font-size:11px;margin-top:5px">
+
+      <div
+        id="chartInfo"
+        style="color:#7f8ca3;font-size:11px;margin-top:5px"
+      >
         No CSV loaded
       </div>
+
     </div>
 
     <div id="price">---</div>
+
   </div>
 
   <canvas id="chart"></canvas>
 
   <div class="controls">
-    <button id="prev">◀ Previous</button>
-    <button id="next" class="blue">Next Candle ▶</button>
-    <button id="play">▶ Play</button>
-    <button id="reset">Reset</button>
+
+    <button id="prev">
+      ◀ Previous
+    </button>
+
+    <button id="next" class="blue">
+      Next Candle ▶
+    </button>
+
+    <button id="play">
+      ▶ Play
+    </button>
+
+    <button id="reset">
+      Reset
+    </button>
 
     <button id="export">
       Export Trades
     </button>
+
   </div>
 
 </div>
@@ -377,6 +419,7 @@ th{
   </div>
 
   <div class="tradeButtons">
+
     <button id="buy" class="green">
       BUY
     </button>
@@ -384,6 +427,7 @@ th{
     <button id="sell" class="red">
       SELL
     </button>
+
   </div>
 
 </div>
@@ -435,8 +479,7 @@ th{
 
     <strong>Trade History</strong>
 
-    <button id="clear"
-            style="width:auto">
+    <button id="clear" style="width:auto">
       Clear
     </button>
 
@@ -447,6 +490,7 @@ th{
     <table>
 
       <thead>
+
         <tr>
           <th>#</th>
           <th>Type</th>
@@ -456,14 +500,17 @@ th{
           <th>P/L</th>
           <th>Reason</th>
         </tr>
+
       </thead>
 
       <tbody id="history">
+
         <tr>
           <td colspan="7">
             No closed trades
           </td>
         </tr>
+
       </tbody>
 
     </table>
@@ -477,7 +524,9 @@ th{
 
 <script>
 
-const $ = id => document.getElementById(id);
+const $ = id =>
+  document.getElementById(id);
+
 
 let candles = [];
 let candleIndex = 0;
@@ -494,58 +543,175 @@ let timer = null;
 
 
 /* =========================
-   CSV LOADER
+   CSV / ZIP LOADER
 ========================= */
 
-$("csvFile").addEventListener("change", function(){
+$("csvFile").addEventListener(
+  "change",
+  async function(){
 
-  const file = this.files[0];
+    const file = this.files[0];
 
-  if(!file) return;
+    if(!file) return;
 
-  const reader = new FileReader();
 
-  reader.onload = function(e){
+    $("fileInfo").textContent =
+      "Reading: " + file.name;
+
 
     try{
 
-      candles = parseCSV(e.target.result);
+      let csvText = "";
 
-      if(!candles.length){
-        throw new Error("No candles");
+
+      /* CSV */
+
+      if(
+        file.name
+          .toLowerCase()
+          .endsWith(".csv")
+      ){
+
+        csvText =
+          await file.text();
+
       }
 
-      candleIndex = Math.min(50,candles.length-1);
+
+      /* ZIP */
+
+      else if(
+        file.name
+          .toLowerCase()
+          .endsWith(".zip")
+      ){
+
+        $("status").textContent =
+          "Reading ZIP...";
+
+
+        const zip =
+          await JSZip.loadAsync(file);
+
+
+        const csvFiles =
+          Object.keys(zip.files)
+            .filter(name =>
+              name
+                .toLowerCase()
+                .endsWith(".csv") &&
+              !zip.files[name].dir
+            );
+
+
+        if(!csvFiles.length){
+
+          throw new Error(
+            "ZIP ke andar CSV nahi mili."
+          );
+
+        }
+
+
+        /* First CSV */
+
+        const selectedCSV =
+          csvFiles[0];
+
+
+        $("fileInfo").textContent =
+          "ZIP → " + selectedCSV;
+
+
+        csvText =
+          await zip.files[selectedCSV]
+            .async("text");
+
+      }
+
+
+      else{
+
+        throw new Error(
+          "Sirf CSV ya ZIP file select karo."
+        );
+
+      }
+
+
+      /* Parse */
+
+      candles =
+        parseCSV(csvText);
+
+
+      if(!candles.length){
+
+        throw new Error(
+          "Valid candles nahi mili."
+        );
+
+      }
+
+
+      candleIndex =
+        Math.min(
+          50,
+          candles.length - 1
+        );
+
 
       openTrade = null;
       pendingOrder = null;
 
+
       $("status").textContent =
         "Historical Data Loaded";
+
 
       $("status").style.color =
         "#35d39a";
 
+
       $("chartInfo").textContent =
         `${candles.length} historical candles loaded`;
 
+
+      $("fileInfo").textContent =
+        `${file.name} • ${candles.length} candles`;
+
+
       render();
 
-    }catch(error){
+
+    }
+
+    catch(error){
 
       console.error(error);
 
+
+      $("status").textContent =
+        "Data Load Error";
+
+
+      $("status").style.color =
+        "#ff5c72";
+
+
+      $("fileInfo").textContent =
+        "File load failed";
+
+
       alert(
-        "CSV read nahi ho saki. Format check karo."
+        "ZIP/CSV load nahi ho saki.\n\n" +
+        error.message
       );
 
     }
 
-  };
-
-  reader.readAsText(file);
-
-});
+  }
+);
 
 
 /* =========================
@@ -555,21 +721,34 @@ $("csvFile").addEventListener("change", function(){
 function parseCSV(text){
 
   const lines =
-    text.trim().split(/\r?\n/);
+    text
+      .trim()
+      .split(/\r?\n/);
+
 
   if(lines.length < 2){
     return [];
   }
 
+
   const header =
     lines[0]
       .split(",")
-      .map(x => x.trim().toLowerCase());
+      .map(x =>
+        x.trim().toLowerCase()
+      );
+
 
   const timeIndex =
     header.findIndex(x =>
-      ["timestamp","date","datetime","time"].includes(x)
+      [
+        "timestamp",
+        "date",
+        "datetime",
+        "time"
+      ].includes(x)
     );
+
 
   const openIndex =
     header.indexOf("open");
@@ -593,19 +772,29 @@ function parseCSV(text){
     lowIndex < 0 ||
     closeIndex < 0
   ){
-    throw new Error("OHLC columns missing");
+
+    throw new Error(
+      "OHLC columns missing"
+    );
+
   }
 
 
   const result = [];
 
 
-  for(let i=1;i<lines.length;i++){
+  for(
+    let i=1;
+    i<lines.length;
+    i++
+  ){
 
     const row =
       lines[i].split(",");
 
-    if(row.length < 5) continue;
+
+    if(row.length < 5)
+      continue;
 
 
     const open =
@@ -627,7 +816,9 @@ function parseCSV(text){
       !Number.isFinite(low) ||
       !Number.isFinite(close)
     ){
+
       continue;
+
     }
 
 
@@ -654,6 +845,7 @@ function parseCSV(text){
 
 
   return result;
+
 }
 
 
@@ -666,26 +858,39 @@ function resize(){
   const canvas =
     $("chart");
 
+
   const rect =
     canvas.getBoundingClientRect();
+
 
   const dpr =
     window.devicePixelRatio || 1;
 
+
   canvas.width =
     rect.width * dpr;
+
 
   canvas.height =
     rect.height * dpr;
 
+
   const ctx =
     canvas.getContext("2d");
 
+
   ctx.setTransform(
-    dpr,0,0,dpr,0,0
+    dpr,
+    0,
+    0,
+    dpr,
+    0,
+    0
   );
 
+
   drawChart();
+
 }
 
 
@@ -694,18 +899,24 @@ function drawChart(){
   const canvas =
     $("chart");
 
+
   const ctx =
     canvas.getContext("2d");
 
+
   const width =
     canvas.clientWidth;
+
 
   const height =
     canvas.clientHeight;
 
 
   ctx.clearRect(
-    0,0,width,height
+    0,
+    0,
+    width,
+    height
   );
 
 
@@ -717,41 +928,56 @@ function drawChart(){
     ctx.font =
       "14px Arial";
 
+
     ctx.fillText(
-      "Upload a historical CSV to start",
+      "Upload a historical CSV or ZIP to start",
       25,
       40
     );
 
+
     return;
+
   }
 
 
   const visible =
     candles.slice(
-      Math.max(0,candleIndex-80),
-      candleIndex+1
+      Math.max(
+        0,
+        candleIndex - 80
+      ),
+      candleIndex + 1
     );
 
 
   let min =
-    Math.min(...visible.map(x=>x.low));
+    Math.min(
+      ...visible.map(x => x.low)
+    );
+
 
   let max =
-    Math.max(...visible.map(x=>x.high));
+    Math.max(
+      ...visible.map(x => x.high)
+    );
 
 
   const padding =
-    (max-min)*0.12 || 1;
+    (max - min) * 0.12 || 1;
+
 
   min -= padding;
   max += padding;
 
 
-  const priceY = price =>
-
-    height -
-    ((price-min)/(max-min))*height;
+  const priceY =
+    price =>
+      height -
+      (
+        (price - min) /
+        (max - min)
+      ) * height;
 
 
   /* GRID */
@@ -765,11 +991,13 @@ function drawChart(){
   for(let i=0;i<=5;i++){
 
     const y =
-      i*height/5;
+      i * height / 5;
+
 
     ctx.beginPath();
 
     ctx.moveTo(0,y);
+
     ctx.lineTo(width,y);
 
     ctx.stroke();
@@ -778,70 +1006,95 @@ function drawChart(){
 
 
   const step =
-    width/visible.length;
+    width / visible.length;
+
 
   const candleWidth =
-    Math.max(3,step*.55);
-
-
-  visible.forEach((c,i)=>{
-
-    const x =
-      i*step+step/2;
-
-    const bullish =
-      c.close>=c.open;
-
-    const color =
-      bullish
-        ? "#35d39a"
-        : "#ff5c72";
-
-
-    ctx.strokeStyle =
-      color;
-
-    ctx.fillStyle =
-      color;
-
-
-    const yHigh =
-      priceY(c.high);
-
-    const yLow =
-      priceY(c.low);
-
-    const yOpen =
-      priceY(c.open);
-
-    const yClose =
-      priceY(c.close);
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(x,yHigh);
-    ctx.lineTo(x,yLow);
-
-    ctx.stroke();
-
-
-    ctx.fillRect(
-
-      x-candleWidth/2,
-
-      Math.min(yOpen,yClose),
-
-      candleWidth,
-
-      Math.max(
-        1,
-        Math.abs(yClose-yOpen)
-      )
-
+    Math.max(
+      3,
+      step * .55
     );
 
-  });
+
+  visible.forEach(
+    (c,i)=>{
+
+      const x =
+        i * step +
+        step / 2;
+
+
+      const bullish =
+        c.close >= c.open;
+
+
+      const color =
+        bullish
+          ? "#35d39a"
+          : "#ff5c72";
+
+
+      ctx.strokeStyle =
+        color;
+
+      ctx.fillStyle =
+        color;
+
+
+      const yHigh =
+        priceY(c.high);
+
+      const yLow =
+        priceY(c.low);
+
+      const yOpen =
+        priceY(c.open);
+
+      const yClose =
+        priceY(c.close);
+
+
+      /* Wick */
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        x,
+        yHigh
+      );
+
+      ctx.lineTo(
+        x,
+        yLow
+      );
+
+      ctx.stroke();
+
+
+      /* Body */
+
+      ctx.fillRect(
+
+        x - candleWidth / 2,
+
+        Math.min(
+          yOpen,
+          yClose
+        ),
+
+        candleWidth,
+
+        Math.max(
+          1,
+          Math.abs(
+            yClose - yOpen
+          )
+        )
+
+      );
+
+    }
+  );
 
 
   if(openTrade){
@@ -878,35 +1131,55 @@ function drawChart(){
   }
 
 
-  function level(price,color,label){
+  function level(
+    price,
+    color,
+    label
+  ){
 
     const y =
       priceY(price);
 
+
     ctx.strokeStyle =
       color;
 
-    ctx.setLineDash([6,4]);
+
+    ctx.setLineDash(
+      [6,4]
+    );
+
 
     ctx.beginPath();
 
     ctx.moveTo(0,y);
-    ctx.lineTo(width,y);
+
+    ctx.lineTo(
+      width,
+      y
+    );
 
     ctx.stroke();
 
+
     ctx.setLineDash([]);
+
 
     ctx.fillStyle =
       color;
 
+
     ctx.font =
       "11px Arial";
+
 
     ctx.fillText(
       `${label} ${format(price)}`,
       8,
-      Math.max(14,y-5)
+      Math.max(
+        14,
+        y - 5
+      )
     );
 
   }
@@ -915,15 +1188,20 @@ function drawChart(){
 
 
 /* =========================
-   PRICE
+   PRICE FORMAT
 ========================= */
 
 function format(price){
 
-  if(price < 10)
+  if(price < 10){
+
     return price.toFixed(5);
 
+  }
+
+
   return price.toFixed(2);
+
 }
 
 
@@ -934,27 +1212,44 @@ function format(price){
 function calculateRisk(){
 
   const bal =
-    Number($("balance").value)||0;
+    Number(
+      $("balance").value
+    ) || 0;
+
 
   const riskPercent =
-    Number($("risk").value)||0;
+    Number(
+      $("risk").value
+    ) || 0;
+
 
   const entry =
-    Number($("entry").value);
+    Number(
+      $("entry").value
+    );
+
 
   const sl =
-    Number($("sl").value);
+    Number(
+      $("sl").value
+    );
+
 
   const tp =
-    Number($("tp").value);
+    Number(
+      $("tp").value
+    );
 
 
   const riskMoney =
-    bal*riskPercent/100;
+    bal *
+    riskPercent /
+    100;
 
 
   $("riskAmount").value =
-    "$"+riskMoney.toFixed(2);
+    "$" +
+    riskMoney.toFixed(2);
 
 
   if(
@@ -963,60 +1258,87 @@ function calculateRisk(){
     !tp
   ){
 
-    $("slDistance").value="-";
-    $("tpDistance").value="-";
-    $("rr").value="-";
-    $("size").value="-";
+    $("slDistance").value =
+      "-";
+
+    $("tpDistance").value =
+      "-";
+
+    $("rr").value =
+      "-";
+
+    $("size").value =
+      "-";
 
     return;
+
   }
 
 
   const slDistance =
-    Math.abs(entry-sl);
+    Math.abs(
+      entry - sl
+    );
+
 
   const tpDistance =
-    Math.abs(tp-entry);
+    Math.abs(
+      tp - entry
+    );
 
 
-  if(slDistance<=0){
+  if(slDistance <= 0){
 
-    $("rr").value="-";
-    $("size").value="-";
+    $("rr").value =
+      "-";
+
+    $("size").value =
+      "-";
 
     return;
+
   }
 
 
   const rr =
-    tpDistance/slDistance;
+    tpDistance /
+    slDistance;
 
 
   $("slDistance").value =
     format(slDistance);
 
+
   $("tpDistance").value =
     format(tpDistance);
 
+
   $("rr").value =
-    "1:"+rr.toFixed(2);
+    "1:" +
+    rr.toFixed(2);
 
 
   let size;
 
 
   if(
-    $("pair").value==="EUR/USD"
+    $("pair").value ===
+    "EUR/USD"
   ){
 
     size =
-      riskMoney/
-      (slDistance*100000);
+      riskMoney /
+      (
+        slDistance *
+        100000
+      );
 
-  }else{
+  }
+
+  else{
 
     size =
-      riskMoney/
+      riskMoney /
       slDistance;
 
   }
@@ -1029,7 +1351,7 @@ function calculateRisk(){
 
 
 /* =========================
-   MARKET ORDER
+   ORDER
 ========================= */
 
 function placeOrder(side){
@@ -1037,10 +1359,11 @@ function placeOrder(side){
   if(!candles.length){
 
     alert(
-      "Pehle historical CSV upload karo."
+      "Pehle historical CSV/ZIP upload karo."
     );
 
     return;
+
   }
 
 
@@ -1051,6 +1374,7 @@ function placeOrder(side){
     );
 
     return;
+
   }
 
 
@@ -1062,18 +1386,26 @@ function placeOrder(side){
 
 
   if(
-    $("orderType").value==="MARKET"
+    $("orderType").value ===
+    "MARKET"
   ){
 
-    entry=current;
+    entry =
+      current;
+
 
     $("entry").value =
       format(entry);
 
-  }else{
+  }
+
+  else{
 
     entry =
-      Number($("entry").value);
+      Number(
+        $("entry").value
+      );
+
 
     if(!entry){
 
@@ -1082,16 +1414,22 @@ function placeOrder(side){
       );
 
       return;
+
     }
 
   }
 
 
   const sl =
-    Number($("sl").value);
+    Number(
+      $("sl").value
+    );
+
 
   const tp =
-    Number($("tp").value);
+    Number(
+      $("tp").value
+    );
 
 
   if(!sl || !tp){
@@ -1101,12 +1439,13 @@ function placeOrder(side){
     );
 
     return;
+
   }
 
 
   if(
-    side==="BUY" &&
-    !(sl<entry && tp>entry)
+    side === "BUY" &&
+    !(sl < entry && tp > entry)
   ){
 
     alert(
@@ -1114,12 +1453,13 @@ function placeOrder(side){
     );
 
     return;
+
   }
 
 
   if(
-    side==="SELL" &&
-    !(tp<entry && sl>entry)
+    side === "SELL" &&
+    !(tp < entry && sl > entry)
   ){
 
     alert(
@@ -1127,11 +1467,14 @@ function placeOrder(side){
     );
 
     return;
+
   }
 
 
   const size =
-    Number($("size").value);
+    Number(
+      $("size").value
+    );
 
 
   if(!size){
@@ -1141,6 +1484,7 @@ function placeOrder(side){
     );
 
     return;
+
   }
 
 
@@ -1152,22 +1496,30 @@ function placeOrder(side){
     side,
 
     entry,
+
     sl,
+
     tp,
+
     size
 
   };
 
 
   if(
-    $("orderType").value==="MARKET"
+    $("orderType").value ===
+    "MARKET"
   ){
 
-    openTrade=trade;
+    openTrade =
+      trade;
 
-  }else{
+  }
 
-    pendingOrder=trade;
+  else{
+
+    pendingOrder =
+      trade;
 
   }
 
@@ -1184,22 +1536,28 @@ function placeOrder(side){
 
 function nextCandle(){
 
-  if(!candles.length) return;
+  if(!candles.length)
+    return;
+
 
   if(
-    candleIndex>=candles.length-1
+    candleIndex >=
+    candles.length - 1
   ){
 
     stopPlay();
 
     return;
+
   }
 
 
   candleIndex++;
 
+
   checkPending();
   checkTrade();
+
 
   render();
 
@@ -1212,7 +1570,9 @@ function nextCandle(){
 
 function previousCandle(){
 
-  if(candleIndex<=0) return;
+  if(candleIndex <= 0)
+    return;
+
 
   candleIndex--;
 
@@ -1222,12 +1582,13 @@ function previousCandle(){
 
 
 /* =========================
-   LIMIT
+   LIMIT CHECK
 ========================= */
 
 function checkPending(){
 
-  if(!pendingOrder) return;
+  if(!pendingOrder)
+    return;
 
 
   const c =
@@ -1235,24 +1596,34 @@ function checkPending(){
 
 
   if(
-    pendingOrder.side==="BUY" &&
-    c.low<=pendingOrder.entry
+    pendingOrder.side ===
+    "BUY" &&
+    c.low <=
+    pendingOrder.entry
   ){
 
-    openTrade=pendingOrder;
-    pendingOrder=null;
+    openTrade =
+      pendingOrder;
+
+    pendingOrder =
+      null;
 
   }
 
 
   if(
     pendingOrder &&
-    pendingOrder.side==="SELL" &&
-    c.high>=pendingOrder.entry
+    pendingOrder.side ===
+    "SELL" &&
+    c.high >=
+    pendingOrder.entry
   ){
 
-    openTrade=pendingOrder;
-    pendingOrder=null;
+    openTrade =
+      pendingOrder;
+
+    pendingOrder =
+      null;
 
   }
 
@@ -1265,51 +1636,89 @@ function checkPending(){
 
 function checkTrade(){
 
-  if(!openTrade) return;
+  if(!openTrade)
+    return;
 
 
   const c =
     candles[candleIndex];
 
 
-  let exit=null;
-  let reason="";
+  let exit = null;
+
+  let reason = "";
 
 
-  if(openTrade.side==="BUY"){
+  if(
+    openTrade.side ===
+    "BUY"
+  ){
 
-    if(c.low<=openTrade.sl){
+    if(
+      c.low <=
+      openTrade.sl
+    ){
 
-      exit=openTrade.sl;
-      reason="SL";
+      exit =
+        openTrade.sl;
 
-    }else if(c.high>=openTrade.tp){
-
-      exit=openTrade.tp;
-      reason="TP";
+      reason =
+        "SL";
 
     }
 
-  }else{
+    else if(
+      c.high >=
+      openTrade.tp
+    ){
 
-    if(c.high>=openTrade.sl){
+      exit =
+        openTrade.tp;
 
-      exit=openTrade.sl;
-      reason="SL";
+      reason =
+        "TP";
 
-    }else if(c.low<=openTrade.tp){
+    }
 
-      exit=openTrade.tp;
-      reason="TP";
+  }
+
+  else{
+
+    if(
+      c.high >=
+      openTrade.sl
+    ){
+
+      exit =
+        openTrade.sl;
+
+      reason =
+        "SL";
+
+    }
+
+    else if(
+      c.low <=
+      openTrade.tp
+    ){
+
+      exit =
+        openTrade.tp;
+
+      reason =
+        "TP";
 
     }
 
   }
 
 
-  if(exit!==null){
+  if(exit !== null){
 
-    closeTrade(exit,reason);
+    closeTrade(
+      exit,
+      reason
+    );
 
   }
 
@@ -1317,33 +1726,46 @@ function checkTrade(){
 
 
 /* =========================
-   CLOSE
+   CLOSE TRADE
 ========================= */
 
-function closeTrade(exit,reason){
+function closeTrade(
+  exit,
+  reason
+){
 
   const pair =
     $("pair").value;
 
 
-  let multiplier=1;
+  let multiplier = 1;
 
 
-  if(pair==="EUR/USD")
-    multiplier=100000;
+  if(
+    pair ===
+    "EUR/USD"
+  ){
+
+    multiplier =
+      100000;
+
+  }
 
 
   const difference =
-    openTrade.side==="BUY"
+    openTrade.side ===
+    "BUY"
 
-      ? exit-openTrade.entry
+      ? exit -
+        openTrade.entry
 
-      : openTrade.entry-exit;
+      : openTrade.entry -
+        exit;
 
 
   const pl =
-    difference*
-    openTrade.size*
+    difference *
+    openTrade.size *
     multiplier;
 
 
@@ -1352,11 +1774,14 @@ function closeTrade(exit,reason){
 
   trades.unshift({
 
-    type:openTrade.type,
+    type:
+      openTrade.type,
 
-    side:openTrade.side,
+    side:
+      openTrade.side,
 
-    entry:openTrade.entry,
+    entry:
+      openTrade.entry,
 
     exit,
 
@@ -1367,7 +1792,8 @@ function closeTrade(exit,reason){
   });
 
 
-  openTrade=null;
+  openTrade =
+    null;
 
 
   peakBalance =
@@ -1394,6 +1820,7 @@ function render(){
     drawChart();
 
     return;
+
   }
 
 
@@ -1414,7 +1841,8 @@ function render(){
 
 
   if(
-    $("orderType").value==="MARKET" &&
+    $("orderType").value ===
+    "MARKET" &&
     !openTrade &&
     !pendingOrder
   ){
@@ -1426,7 +1854,9 @@ function render(){
 
 
   calculateRisk();
+
   drawChart();
+
   updateStats();
 
 }
@@ -1439,41 +1869,58 @@ function render(){
 function updateStats(){
 
   $("statBalance").textContent =
-    "$"+balance.toFixed(2);
+    "$" +
+    balance.toFixed(2);
 
 
   const starting =
-    Number($("balance").value)||1000;
+    Number(
+      $("balance").value
+    ) || 1000;
 
 
   const net =
-    balance-starting;
+    balance -
+    starting;
 
 
   $("statPL").textContent =
-    `${net>=0?"+":""}$${net.toFixed(2)}`;
+    `${net >= 0 ? "+" : ""}$${net.toFixed(2)}`;
 
 
   const wins =
     trades.filter(
-      x=>x.pl>0
+      x => x.pl > 0
     ).length;
 
 
   $("statWin").textContent =
     trades.length
-      ? (wins/trades.length*100).toFixed(0)+"%"
+      ? (
+          wins /
+          trades.length *
+          100
+        ).toFixed(0) + "%"
+
       : "0%";
 
 
   const dd =
     peakBalance
-      ? ((peakBalance-balance)/peakBalance)*100
+      ? (
+          (
+            peakBalance -
+            balance
+          ) /
+          peakBalance
+        ) * 100
+
       : 0;
 
 
   $("statDD").textContent =
-    dd.toFixed(2)+"%";
+    dd.toFixed(2) +
+    "%";
 
 
   $("statOpen").textContent =
@@ -1499,16 +1946,22 @@ function renderHistory(){
   if(!trades.length){
 
     $("history").innerHTML =
-      `<tr>
-        <td colspan="7">No closed trades</td>
-       </tr>`;
+      `
+      <tr>
+        <td colspan="7">
+          No closed trades
+        </td>
+      </tr>
+      `;
 
     return;
+
   }
 
 
   $("history").innerHTML =
-    trades.map((t,i)=>`
+    trades.map(
+      (t,i) => `
 
       <tr>
 
@@ -1523,14 +1976,16 @@ function renderHistory(){
         <td>${format(t.exit)}</td>
 
         <td>
-          ${t.pl>=0?"+":""}$${t.pl.toFixed(2)}
+          ${t.pl >= 0 ? "+" : ""}
+          $${t.pl.toFixed(2)}
         </td>
 
         <td>${t.reason}</td>
 
       </tr>
 
-    `).join("");
+      `
+    ).join("");
 
 }
 
@@ -1545,20 +2000,39 @@ $("reset").addEventListener(
 
     stopPlay();
 
+
     balance =
-      Number($("balance").value)||1000;
+      Number(
+        $("balance").value
+      ) || 1000;
 
-    peakBalance=balance;
 
-    trades=[];
+    peakBalance =
+      balance;
 
-    openTrade=null;
-    pendingOrder=null;
 
-    candleIndex=
-      Math.min(50,candles.length-1);
+    trades = [];
+
+
+    openTrade =
+      null;
+
+
+    pendingOrder =
+      null;
+
+
+    candleIndex =
+      candles.length
+        ? Math.min(
+            50,
+            candles.length - 1
+          )
+        : 0;
+
 
     renderHistory();
+
     render();
 
   }
@@ -1573,14 +2047,21 @@ $("clear").addEventListener(
   "click",
   ()=>{
 
-    trades=[];
+    trades = [];
+
 
     balance =
-      Number($("balance").value)||1000;
+      Number(
+        $("balance").value
+      ) || 1000;
 
-    peakBalance=balance;
+
+    peakBalance =
+      balance;
+
 
     renderHistory();
+
     updateStats();
 
   }
@@ -1599,19 +2080,24 @@ $("play").addEventListener(
 
       stopPlay();
 
-    }else{
+    }
+
+    else{
 
       if(!candles.length){
 
         alert(
-          "Pehle CSV upload karo."
+          "Pehle CSV/ZIP upload karo."
         );
 
         return;
+
       }
+
 
       $("play").textContent =
         "⏸ Pause";
+
 
       timer =
         setInterval(
@@ -1629,10 +2115,15 @@ function stopPlay(){
 
   if(timer){
 
-    clearInterval(timer);
-    timer=null;
+    clearInterval(
+      timer
+    );
+
+    timer =
+      null;
 
   }
+
 
   $("play").textContent =
     "▶ Play";
@@ -1649,15 +2140,18 @@ $("next").addEventListener(
   nextCandle
 );
 
+
 $("prev").addEventListener(
   "click",
   previousCandle
 );
 
+
 $("buy").addEventListener(
   "click",
   ()=>placeOrder("BUY")
 );
+
 
 $("sell").addEventListener(
   "click",
@@ -1675,19 +2169,29 @@ $("sell").addEventListener(
   "entry",
   "sl",
   "tp"
-].forEach(id=>{
+].forEach(
+  id => {
 
-  $(id).addEventListener(
-    "input",
-    ()=>{
-      calculateRisk();
-      updateStats();
-      drawChart();
-    }
-  );
+    $(id).addEventListener(
+      "input",
+      ()=>{
 
-});
+        calculateRisk();
 
+        updateStats();
+
+        drawChart();
+
+      }
+    );
+
+  }
+);
+
+
+/* =========================
+   PAIR
+========================= */
 
 $("pair").addEventListener(
   "change",
@@ -1696,9 +2200,15 @@ $("pair").addEventListener(
     $("chartPair").textContent =
       $("pair").value;
 
+    calculateRisk();
+
   }
 );
 
+
+/* =========================
+   TIMEFRAME
+========================= */
 
 $("timeframe").addEventListener(
   "change",
@@ -1726,6 +2236,7 @@ $("export").addEventListener(
       );
 
       return;
+
     }
 
 
@@ -1733,40 +2244,60 @@ $("export").addEventListener(
       "Type,Side,Entry,Exit,P/L,Reason\n";
 
 
-    trades.forEach(t=>{
+    trades.forEach(
+      t => {
 
-      csv +=
-        `${t.type},${t.side},${t.entry},${t.exit},${t.pl},${t.reason}\n`;
+        csv +=
+          `${t.type},${t.side},${t.entry},${t.exit},${t.pl},${t.reason}\n`;
 
-    });
+      }
+    );
 
 
     const blob =
       new Blob(
         [csv],
-        {type:"text/csv"}
+        {
+          type:
+            "text/csv"
+        }
       );
 
 
     const url =
-      URL.createObjectURL(blob);
+      URL.createObjectURL(
+        blob
+      );
 
 
     const a =
-      document.createElement("a");
+      document.createElement(
+        "a"
+      );
 
-    a.href=url;
 
-    a.download=
+    a.href =
+      url;
+
+
+    a.download =
       "backtest-results.csv";
+
 
     a.click();
 
-    URL.revokeObjectURL(url);
+
+    URL.revokeObjectURL(
+      url
+    );
 
   }
 );
 
+
+/* =========================
+   START
+========================= */
 
 window.addEventListener(
   "resize",
@@ -1775,7 +2306,9 @@ window.addEventListener(
 
 
 resize();
+
 renderHistory();
+
 updateStats();
 
 </script>

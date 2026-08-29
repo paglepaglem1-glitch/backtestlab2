@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BacktestLab Pro</title>
+  <title>BacktestLab</title>
   <link rel="stylesheet" href="dashboard.css">
 </head>
+
 <body>
 
 <header>
@@ -16,6 +17,7 @@
 <main>
 
   <section class="controls">
+
     <div>
       <label>Market</label>
       <select id="market">
@@ -41,17 +43,27 @@
     </div>
 
     <div>
+      <label>Order Type</label>
+      <select id="orderType">
+        <option value="MARKET">Market</option>
+        <option value="LIMIT">Limit</option>
+      </select>
+    </div>
+
+    <div>
       <label>Balance</label>
-      <input id="balance" type="number" value="1000">
+      <input id="balance" type="number" value="1000" min="1">
     </div>
 
     <div>
       <label>Risk %</label>
-      <input id="risk" type="number" value="1" step="0.1">
+      <input id="risk" type="number" value="1" min="0.1" step="0.1">
     </div>
 
     <button id="reset">RESET</button>
+
   </section>
+
 
   <div class="grid">
 
@@ -60,78 +72,135 @@
       <div class="card chart-box">
 
         <div class="chart-header">
+
           <div>
             <strong id="chartPair">EUR/USD</strong>
             <small id="chartInfo">5m • Demo Historical Data</small>
           </div>
 
           <strong id="price">1.10000</strong>
+
         </div>
 
         <canvas id="chart"></canvas>
 
         <div class="replay">
+
           <button id="prev">← Previous</button>
-          <button id="next" class="primary">Next Candle →</button>
-          <button id="play">▶ Play</button>
+
+          <button id="next" class="primary">
+            Next Candle →
+          </button>
+
+          <button id="play">
+            ▶ Play
+          </button>
 
           <label class="speed">
             Speed
             <input id="speed" type="range" min="100" max="1000" value="400">
           </label>
+
         </div>
 
       </div>
+
+
+      <div class="card risk-panel">
+
+        <div class="panel-title">
+          <strong>Risk Management</strong>
+          <span id="riskStatus">Ready</span>
+        </div>
+
+        <div class="risk-grid">
+
+          <div>
+            <label>Entry</label>
+            <input id="entry">
+          </div>
+
+          <div>
+            <label>Stop Loss</label>
+            <input id="sl">
+          </div>
+
+          <div>
+            <label>Take Profit</label>
+            <input id="tp">
+          </div>
+
+          <div>
+            <label>Risk Amount</label>
+            <input id="riskAmount" readonly>
+          </div>
+
+          <div>
+            <label>SL Distance</label>
+            <input id="slDistance" readonly>
+          </div>
+
+          <div>
+            <label>TP Distance</label>
+            <input id="tpDistance" readonly>
+          </div>
+
+          <div>
+            <label>Risk / Reward</label>
+            <input id="rr" readonly>
+          </div>
+
+          <div>
+            <label>Position Size</label>
+            <input id="size" readonly>
+          </div>
+
+          <div>
+            <label>Potential Loss</label>
+            <input id="potentialLoss" readonly>
+          </div>
+
+          <div>
+            <label>Potential Profit</label>
+            <input id="potentialProfit" readonly>
+          </div>
+
+        </div>
+
+      </div>
+
 
       <div class="card trade-panel">
 
         <div>
           <label>Position</label>
+
           <div class="side-buttons">
             <button id="buy" class="buy">BUY</button>
             <button id="sell" class="sell">SELL</button>
           </div>
-        </div>
-<div>
-  <label>Order Type</label>
-  <select id="orderType">
-    <option value="MARKET">Market</option>
-    <option value="LIMIT">Limit</option>
-  </select>
-</div>
-        <div>
-          <label>Entry</label>
-          <input id="entry">
-        </div>
 
-        <div>
-          <label>Stop Loss</label>
-          <input id="sl">
-        </div>
-
-        <div>
-          <label>Take Profit</label>
-          <input id="tp">
-        </div>
-
-        <div>
-          <label>Position Size</label>
-          <input id="size" type="number" value="0.10" step="0.01">
         </div>
 
       </div>
 
+
       <div class="card history">
 
         <div class="history-title">
+
           <strong>Trade History</strong>
+
           <button id="clear">Clear</button>
+
         </div>
 
         <table>
+
           <thead>
             <tr>
               <th>#</th>
+              <th>Type</th>
               <th>Side</th>
               <th>Entry</th>
               <th>Exit</th>
@@ -141,17 +210,24 @@
           </thead>
 
           <tbody id="history"></tbody>
+
         </table>
 
       </div>
 
     </section>
 
+
     <aside>
 
       <div class="stat">
         <span>Balance</span>
         <b id="statBalance">$1,000.00</b>
+      </div>
+
+      <div class="stat">
+        <span>Risk Amount</span>
+        <b id="statRisk">$10.00</b>
       </div>
 
       <div class="stat">
@@ -174,13 +250,20 @@
         <b id="statOpen">None</b>
       </div>
 
+      <div class="stat">
+        <span>Pending Order</span>
+        <b id="statPending">None</b>
+      </div>
+
       <div class="help">
-        <strong>Replay Guide</strong>
-        <p>1. Move candle by candle.</p>
-        <p>2. Set SL and TP.</p>
-        <p>3. Click BUY or SELL.</p>
-        <p>4. Continue replay.</p>
-        <p>5. SL/TP closes automatically.</p>
+
+        <strong>Risk Guide</strong>
+
+        <p>Risk % automatically calculates your maximum planned loss.</p>
+        <p>Position Size is calculated from Entry and Stop Loss.</p>
+        <p>R:R shows the potential reward compared with risk.</p>
+        <p>This is a demo backtesting tool, not a live trading system.</p>
+
       </div>
 
     </aside>
@@ -190,5 +273,6 @@
 </main>
 
 <script src="dashboard.js"></script>
+
 </body>
 </html>
